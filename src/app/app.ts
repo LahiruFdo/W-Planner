@@ -85,6 +85,9 @@ export class App implements OnInit, OnDestroy {
   protected adminLoading = false;
   protected adminError = '';
   protected adminGuestsLoading = false;
+  protected adminAddingGuest = false;
+  protected adminSavingGuestId: string | null = null;
+  protected adminSuccessMessage = '';
   protected adminGuests: AdminGuest[] = [];
   protected adminNewGuest: {
     title: string;
@@ -109,6 +112,7 @@ export class App implements OnInit, OnDestroy {
   protected selectedGuest: GuestSearchResult | null = null;
   protected attendingCount = 1;
   protected attendance = '';
+  protected attendingCountError = '';
   protected submitting = false;
   protected statusMessage = '';
   protected isStoryOpen = false;
@@ -251,6 +255,7 @@ export class App implements OnInit, OnDestroy {
     this.adminGuests = [];
     this.adminStorySlides = [];
     this.adminError = '';
+    this.adminSuccessMessage = '';
     window.sessionStorage.removeItem('adminKey');
   }
 
@@ -281,23 +286,36 @@ export class App implements OnInit, OnDestroy {
       return;
     }
 
+    const invitedCount = Number(g.invitedCount);
+    if (!Number.isFinite(invitedCount) || invitedCount < 1) {
+      this.adminError = 'Invited count must be >= 1.';
+      return;
+    }
+
     const payload = {
       id: (g.id ?? '').trim() || undefined,
       title: g.title ?? '',
-      guestType: g.guestType ?? '',
+      guestType: '',
       name: g.name ?? '',
-      invitedCount: Number(g.invitedCount)
+      invitedCount
     };
 
+    this.adminSavingGuestId = g.id;
+    this.adminError = '';
+    this.adminSuccessMessage = '';
     try {
       await firstValueFrom(
         this.http.put(this.apiUrl('manage/guests'), payload, {
           headers: this.adminHeaders()
         })
       );
+      this.adminSuccessMessage = 'Guest saved.';
       await this.adminRefreshGuests();
     } catch {
       this.adminError = 'Could not save guest.';
+    } finally {
+      this.adminSavingGuestId = null;
+      this.cdr.markForCheck();
     }
   }
 
@@ -309,7 +327,7 @@ export class App implements OnInit, OnDestroy {
 
     const payload = {
       title: this.adminNewGuest.title ?? '',
-      guestType: this.adminNewGuest.guestType ?? '',
+      guestType: '',
       name: this.adminNewGuest.name ?? '',
       invitedCount: Number(this.adminNewGuest.invitedCount)
     };
@@ -323,6 +341,9 @@ export class App implements OnInit, OnDestroy {
       return;
     }
 
+    this.adminAddingGuest = true;
+    this.adminError = '';
+    this.adminSuccessMessage = '';
     try {
       await firstValueFrom(
         this.http.put(this.apiUrl('manage/guests'), payload, {
@@ -330,9 +351,13 @@ export class App implements OnInit, OnDestroy {
         })
       );
       this.adminNewGuest = { title: '', guestType: '', name: '', invitedCount: 1 };
+      this.adminSuccessMessage = 'Guest added.';
       await this.adminRefreshGuests();
     } catch {
       this.adminError = 'Could not add guest.';
+    } finally {
+      this.adminAddingGuest = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -449,6 +474,7 @@ export class App implements OnInit, OnDestroy {
     this.selectedGuest = g;
     this.attendingCount = g.invitedCount > 0 ? g.invitedCount : 1;
     this.attendance = '';
+    this.attendingCountError = '';
     this.statusMessage = '';
     this.cdr.markForCheck();
   }
@@ -456,8 +482,50 @@ export class App implements OnInit, OnDestroy {
   protected clearGuestSelection(): void {
     this.selectedGuest = null;
     this.attendance = '';
+    this.attendingCountError = '';
     this.statusMessage = '';
     this.cdr.markForCheck();
+  }
+
+  protected setAttendance(value: 'yes' | 'no'): void {
+    this.attendance = value;
+    this.attendingCountError = '';
+    if (value === 'yes' && this.selectedGuest) {
+      const max = this.selectedGuest.invitedCount;
+      if (!Number.isFinite(this.attendingCount) || this.attendingCount < 1) {
+        this.attendingCount = 1;
+      } else if (this.attendingCount > max) {
+        this.attendingCount = max;
+      }
+    }
+    this.cdr.markForCheck();
+  }
+
+  protected onAttendingCountChange(): void {
+    if (!this.selectedGuest || this.attendance !== 'yes') {
+      this.attendingCountError = '';
+      return;
+    }
+    const max = this.selectedGuest.invitedCount;
+    const n = Math.floor(Number(this.attendingCount));
+    if (!Number.isFinite(n) || n < 1) {
+      this.attendingCountError = 'Enter at least 1 guest.';
+    } else if (n > max) {
+      this.attendingCountError = `Maximum ${max} (invited count).`;
+    } else {
+      this.attendingCountError = '';
+    }
+    this.cdr.markForCheck();
+  }
+
+  protected get canSubmitRsvp(): boolean {
+    if (!this.selectedGuest || !this.attendance || this.submitting) {
+      return false;
+    }
+    if (this.attendance === 'yes' && this.attendingCountError) {
+      return false;
+    }
+    return true;
   }
 
   protected openStory(): void {
@@ -502,6 +570,14 @@ export class App implements OnInit, OnDestroy {
     if (!this.attendance) {
       this.statusMessage = 'Please choose Yes or No for attendance.';
       return;
+    }
+
+    if (this.attendance === 'yes') {
+      this.onAttendingCountChange();
+      if (this.attendingCountError) {
+        this.statusMessage = this.attendingCountError;
+        return;
+      }
     }
 
     const invited = this.selectedGuest.invitedCount;

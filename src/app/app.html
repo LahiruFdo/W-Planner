@@ -27,15 +27,12 @@
         <section class="admin-section">
           <h3>Guest List</h3>
 
-          <div class="admin-guest-form">
+          <div class="admin-add-card">
+            <h4 class="admin-subheading">Add invitation</h4>
+            <div class="admin-guest-form">
             <label>
               Title
               <input type="text" [(ngModel)]="adminNewGuest.title" placeholder="Mr / Mrs / Ms / ..." />
-            </label>
-
-            <label>
-              Type
-              <input type="text" [(ngModel)]="adminNewGuest.guestType" placeholder="Mr. & Mrs. / Mr. / ..." />
             </label>
 
             <label>
@@ -44,56 +41,77 @@
             </label>
 
             <label>
-              Count
+              Invited count
               <input type="number" min="1" [(ngModel)]="adminNewGuest.invitedCount" />
             </label>
-          </div>
+            </div>
 
-          <button class="btn" type="button" (click)="adminAddNewGuest()" [disabled]="adminGuestsLoading">
-            Add guest
+          <button
+            class="btn"
+            type="button"
+            (click)="adminAddNewGuest()"
+            [disabled]="adminAddingGuest || adminGuestsLoading"
+          >
+            {{ adminAddingGuest ? 'Saving...' : 'Add guest' }}
           </button>
 
-          @if (adminGuestsLoading) {
-            <p class="guest-search-status">Saving/loading...</p>
+          @if (adminSuccessMessage) {
+            <p class="admin-success">{{ adminSuccessMessage }}</p>
+          }
+          </div>
+
+          <h4 class="admin-subheading admin-table-heading">Saved invitations</h4>
+
+          @if (adminGuestsLoading && adminGuests.length === 0) {
+            <p class="guest-search-status">Loading guests...</p>
           } @else if (adminGuests.length === 0) {
             <p class="guest-search-status">No guests yet.</p>
           } @else {
-            <div class="admin-guests">
-              @for (g of adminGuests; track g.id) {
-                <div class="admin-guest-row">
-                  <div class="admin-guest-fields">
-                    <label>
-                      Title
-                      <input type="text" [(ngModel)]="g.title" />
-                    </label>
-                    <label>
-                      Type
-                      <input type="text" [(ngModel)]="g.guestType" />
-                    </label>
-                    <label>
-                      Name
-                      <input type="text" [(ngModel)]="g.name" />
-                    </label>
-                    <label>
-                      Count
-                      <input type="number" min="1" [(ngModel)]="g.invitedCount" />
-                    </label>
-                  </div>
-
-                  <div class="admin-guest-meta">
-                    <div class="admin-guest-status">
-                      RSVP: <strong>{{ g.isComing || 'pending' }}</strong>
-                    </div>
-                    <div class="admin-guest-status">
-                      Final count: <strong>{{ g.finalCount || '—' }}</strong>
-                    </div>
-                  </div>
-
-                  <button class="btn admin-save" type="button" (click)="adminUpsertGuest(g)">
-                    Save
-                  </button>
-                </div>
-              }
+            <div class="admin-table-wrap">
+              <table class="admin-guest-table">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Name</th>
+                    <th>Invited</th>
+                    <th>RSVP</th>
+                    <th>Attending</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (g of adminGuests; track g.id) {
+                    <tr>
+                      <td>
+                        <input type="text" class="admin-table-input" [(ngModel)]="g.title" />
+                      </td>
+                      <td>
+                        <input type="text" class="admin-table-input" [(ngModel)]="g.name" />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          class="admin-table-input admin-table-input--count"
+                          min="1"
+                          [(ngModel)]="g.invitedCount"
+                        />
+                      </td>
+                      <td>{{ g.isComing || 'pending' }}</td>
+                      <td>{{ g.finalCount || '—' }}</td>
+                      <td>
+                        <button
+                          class="btn admin-save"
+                          type="button"
+                          (click)="adminUpsertGuest(g)"
+                          [disabled]="adminSavingGuestId === g.id"
+                        >
+                          {{ adminSavingGuestId === g.id ? 'Saving...' : 'Save' }}
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
             </div>
           }
 
@@ -273,7 +291,6 @@
               @for (g of guestSearchResults; track g.id) {
                 <li>
                   <button type="button" class="guest-pick" (click)="selectGuest(g)">
-                    <span class="guest-pick-type">{{ g.guestType || '—' }}</span>
                     <span class="guest-pick-name">{{ g.title }} {{ g.name }}</span>
                     <span class="guest-pick-count">{{ g.invitedCount }} invited</span>
                   </button>
@@ -290,26 +307,31 @@
                 <span class="guest-selected-label">Your invitation</span>
                 <button type="button" class="guest-clear" (click)="clearGuestSelection()">Change</button>
               </div>
-              <p class="guest-selected-readonly">{{ selectedGuest.guestType }} — {{ selectedGuest.title }} {{ selectedGuest.name }}</p>
+              <p class="guest-selected-readonly">{{ selectedGuest.title }} {{ selectedGuest.name }}</p>
               <p class="guest-selected-meta">{{ selectedGuest.invitedCount }} seat(s) on this invitation</p>
             </div>
 
-            <label for="attendanceToggle">Will you attend?</label>
-            <div class="toggle-wrap">
-              <span [class.active-label]="attendance === 'yes'">Yes</span>
-              <label class="switch" for="attendanceToggle">
-                <input
-                  id="attendanceToggle"
-                  type="checkbox"
-                  [checked]="attendance === 'yes'"
-                  (change)="attendance = $any($event.target).checked ? 'yes' : 'no'"
-                />
-                <span class="slider"></span>
-              </label>
-              <span [class.active-label]="attendance === 'no'">No</span>
+            <label>Will you attend?</label>
+            <div class="attendance-options" role="group" aria-label="Will you attend?">
+              <button
+                type="button"
+                class="attendance-btn"
+                [class.attendance-btn--active]="attendance === 'yes'"
+                (click)="setAttendance('yes')"
+              >
+                Yes
+              </button>
+              <button
+                type="button"
+                class="attendance-btn"
+                [class.attendance-btn--active]="attendance === 'no'"
+                (click)="setAttendance('no')"
+              >
+                No
+              </button>
             </div>
 
-            @if (attendance === 'yes' && selectedGuest.invitedCount > 1) {
+            @if (attendance === 'yes') {
               <label for="attendingCount">How many will attend?</label>
               <input
                 id="attendingCount"
@@ -318,10 +340,16 @@
                 min="1"
                 [max]="selectedGuest.invitedCount"
                 [(ngModel)]="attendingCount"
+                (ngModelChange)="onAttendingCountChange()"
               />
+              @if (attendingCountError) {
+                <p class="field-error">{{ attendingCountError }}</p>
+              } @else {
+                <p class="field-hint">Maximum {{ selectedGuest.invitedCount }} (invited count).</p>
+              }
             }
 
-            <button class="btn" type="submit" [disabled]="submitting">
+            <button class="btn" type="submit" [disabled]="submitting || !canSubmitRsvp">
               {{ submitting ? 'Sending...' : 'Send RSVP' }}
             </button>
           }

@@ -1023,6 +1023,96 @@ footer {
   margin-top: 1.2rem;
 }
 
+.admin-subheading {
+  margin: 0.85rem 0 0.5rem;
+  font-size: 1rem;
+  color: #f5e6c8;
+}
+
+.admin-table-heading {
+  margin-top: 1.25rem;
+}
+
+.admin-add-card {
+  border: 1px solid rgb(244 223 176 / 35%);
+  border-radius: 0.65rem;
+  padding: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.admin-success {
+  margin: 0.65rem 0 0;
+  color: #c8f0c8;
+  font-weight: 600;
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+  margin-top: 0.5rem;
+}
+
+.admin-guest-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.admin-guest-table th,
+.admin-guest-table td {
+  border: 1px solid rgb(244 223 176 / 30%);
+  padding: 0.5rem 0.55rem;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.admin-guest-table th {
+  color: #f5e6c8;
+  font-weight: 700;
+  background: rgb(253 248 239 / 6%);
+}
+
+.admin-table-input {
+  width: 100%;
+  min-width: 4.5rem;
+  box-sizing: border-box;
+}
+
+.admin-table-input--count {
+  max-width: 5rem;
+}
+
+.attendance-options {
+  display: flex;
+  gap: 0.65rem;
+  margin: 0.35rem 0 0.75rem;
+}
+
+.attendance-btn {
+  flex: 1;
+  min-height: 42px;
+  border-radius: 999px;
+  border: 1px solid rgb(244 223 176 / 45%);
+  background: rgb(253 248 239 / 8%);
+  color: #ebd7ac;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+.attendance-btn--active {
+  background: rgb(241 203 132 / 22%);
+  border-color: #f1cb84;
+  color: #fff4d5;
+  font-weight: 700;
+}
+
+.field-error {
+  margin: 0.35rem 0 0.5rem;
+  color: #ffd0d0;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
 .admin-guest-form {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
