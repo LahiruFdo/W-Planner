@@ -143,6 +143,6 @@ async function adminGuestsHandler(request, _context) {
 functions_1.app.http('adminGuests', {
     methods: ['GET', 'PUT', 'OPTIONS'],
     authLevel: 'anonymous',
-    route: 'admin/guests',
+    route: 'manage/guests',
     handler: adminGuestsHandler
 });

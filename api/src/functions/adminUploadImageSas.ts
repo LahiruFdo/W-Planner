@@ -70,6 +70,6 @@ export async function adminUploadImageSasHandler(
 app.http('adminUploadImageSas', {
   methods: ['POST', 'OPTIONS'],
   authLevel: 'anonymous',
-  route: 'admin/images/sas',
+  route: 'manage/images/sas',
   handler: adminUploadImageSasHandler
 });

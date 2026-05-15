@@ -51,6 +51,6 @@ async function adminUploadImageSasHandler(request, _context) {
 functions_1.app.http('adminUploadImageSas', {
     methods: ['POST', 'OPTIONS'],
     authLevel: 'anonymous',
-    route: 'admin/images/sas',
+    route: 'manage/images/sas',
     handler: adminUploadImageSasHandler
 });

@@ -76,6 +76,6 @@ async function adminPutStoryConfigHandler(request, _context) {
 functions_1.app.http('adminPutStoryConfig', {
     methods: ['PUT', 'OPTIONS'],
     authLevel: 'anonymous',
-    route: 'admin/story',
+    route: 'manage/story',
     handler: adminPutStoryConfigHandler
 });

@@ -169,6 +169,6 @@ export async function adminGuestsHandler(
 app.http('adminGuests', {
   methods: ['GET', 'PUT', 'OPTIONS'],
   authLevel: 'anonymous',
-  route: 'admin/guests',
+  route: 'manage/guests',
   handler: adminGuestsHandler
 });

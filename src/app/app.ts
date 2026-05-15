@@ -217,7 +217,7 @@ export class App implements OnInit, OnDestroy {
     this.adminError = '';
     try {
       const res = await firstValueFrom(
-        this.http.get<{ guests?: AdminGuest[] }>(this.apiUrl('admin/guests'), {
+        this.http.get<{ guests?: AdminGuest[] }>(this.apiUrl('manage/guests'), {
           headers: this.adminHeaders()
         })
       );
@@ -231,7 +231,15 @@ export class App implements OnInit, OnDestroy {
       this.adminAuthed = false;
       this.adminGuests = [];
       this.adminStorySlides = [];
-      this.adminError = e?.error?.error ?? 'Admin authentication failed.';
+      const status = e?.status;
+      if (status === 404) {
+        this.adminError =
+          'API not found (404). Ensure the /api folder is deployed and Azure Functions are running.';
+      } else if (status === 503) {
+        this.adminError = e?.error?.error ?? 'API is not configured on the server.';
+      } else {
+        this.adminError = e?.error?.error ?? 'Admin authentication failed.';
+      }
     } finally {
       this.adminLoading = false;
       this.cdr.markForCheck();
@@ -254,7 +262,7 @@ export class App implements OnInit, OnDestroy {
     this.adminError = '';
     try {
       const res = await firstValueFrom(
-        this.http.get<{ guests?: AdminGuest[] }>(this.apiUrl('admin/guests'), {
+        this.http.get<{ guests?: AdminGuest[] }>(this.apiUrl('manage/guests'), {
           headers: this.adminHeaders()
         })
       );
@@ -283,7 +291,7 @@ export class App implements OnInit, OnDestroy {
 
     try {
       await firstValueFrom(
-        this.http.put(this.apiUrl('admin/guests'), payload, {
+        this.http.put(this.apiUrl('manage/guests'), payload, {
           headers: this.adminHeaders()
         })
       );
@@ -317,7 +325,7 @@ export class App implements OnInit, OnDestroy {
 
     try {
       await firstValueFrom(
-        this.http.put(this.apiUrl('admin/guests'), payload, {
+        this.http.put(this.apiUrl('manage/guests'), payload, {
           headers: this.adminHeaders()
         })
       );
@@ -339,7 +347,7 @@ export class App implements OnInit, OnDestroy {
     this.adminError = '';
     try {
       await firstValueFrom(
-        this.http.put(this.apiUrl('admin/story'), { slides: this.adminStorySlides }, { headers: this.adminHeaders() })
+        this.http.put(this.apiUrl('manage/story'), { slides: this.adminStorySlides }, { headers: this.adminHeaders() })
       );
     } catch {
       this.adminError = 'Could not save story.';
@@ -385,7 +393,7 @@ export class App implements OnInit, OnDestroy {
     try {
       const sasRes = await firstValueFrom(
         this.http.post<{ uploadUrl?: string; publicUrl?: string }>(
-          this.apiUrl('admin/images/sas'),
+          this.apiUrl('manage/images/sas'),
           { fileName: file.name, contentType: file.type },
           { headers: this.adminHeaders() }
         )
