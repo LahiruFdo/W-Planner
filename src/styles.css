@@ -10,5 +10,10 @@ body {
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
-  background: linear-gradient(160deg, #2a1344, #3f1d63);
+  min-height: 100dvh;
+  background-color: transparent;
+  background-image: url("/bg.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }

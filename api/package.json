@@ -1,0 +1,25 @@
+{
+  "name": "wedding-invitation-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Azure Functions API for wedding invitation (Table + Blob)",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "prestart": "npm run build",
+    "start": "func start"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@azure/data-tables": "^13.3.0",
+    "@azure/functions": "^4.7.0",
+    "@azure/storage-blob": "^12.28.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "~5.9.2"
+  }
+}

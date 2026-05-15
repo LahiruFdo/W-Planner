@@ -11,6 +11,10 @@
 npm-debug.log
 yarn-error.log
 
+# Azure Functions API (track /api; ignore dependencies only)
+/api/node_modules
+api/local.settings.json
+
 # IDEs and editors
 .idea/
 .project

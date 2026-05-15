@@ -10,5 +10,6 @@ export const environment = {
   receptionTime: '11:00 AM onwards',
   receptionAddress: 'Kalutara',
   receptionMapUrl: 'https://maps.google.com',
+  apiBaseUrl: '/api',
   googleApiUrl: ''
 };

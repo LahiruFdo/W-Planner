@@ -1,0 +1,7 @@
+.git*
+.vscode
+local.settings.json
+src
+tsconfig.json
+*.md
+*.map
