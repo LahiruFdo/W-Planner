@@ -30,34 +30,61 @@
           <div class="admin-add-card">
             <h4 class="admin-subheading">Add invitation</h4>
             <div class="admin-guest-form">
-            <label>
-              Title
-              <input type="text" [(ngModel)]="adminNewGuest.title" placeholder="Mr / Mrs / Ms / ..." />
-            </label>
+              <label>
+                Title
+                <select [(ngModel)]="adminNewGuest.title">
+                  <option value="">(none)</option>
+                  @for (t of titleOptions; track t) {
+                    <option [value]="t">{{ t }}</option>
+                  }
+                </select>
+              </label>
 
-            <label>
-              Name
-              <input type="text" [(ngModel)]="adminNewGuest.name" placeholder="Guest family name" />
-            </label>
+              <label>
+                Invitation type
+                <select [(ngModel)]="adminNewGuest.invitationType">
+                  @for (opt of invitationTypeOptions; track opt.value) {
+                    <option [value]="opt.value">{{ opt.label }}</option>
+                  }
+                </select>
+              </label>
 
-            <label>
-              Invited count
-              <input type="number" min="1" [(ngModel)]="adminNewGuest.invitedCount" />
-            </label>
+              <label>
+                Name
+                <input type="text" [(ngModel)]="adminNewGuest.name" placeholder="Surname or full name" />
+              </label>
+
+              <label class="admin-form-wide">
+                Other searchable names
+                <input
+                  type="text"
+                  [(ngModel)]="adminNewGuest.searchKeywords"
+                  placeholder="e.g. Anne, John Junior, Mary (comma-separated)"
+                />
+              </label>
+
+              <label>
+                Invited count
+                <input type="number" min="1" [(ngModel)]="adminNewGuest.invitedCount" />
+              </label>
             </div>
 
-          <button
-            class="btn"
-            type="button"
-            (click)="adminAddNewGuest()"
-            [disabled]="adminAddingGuest || adminGuestsLoading"
-          >
-            {{ adminAddingGuest ? 'Saving...' : 'Add guest' }}
-          </button>
+            @if (adminNewGuest.name) {
+              <p class="admin-preview">Will appear as: <strong>{{ formatGuestDisplay(adminNewGuest) }}</strong></p>
+            }
 
-          @if (adminSuccessMessage) {
-            <p class="admin-success">{{ adminSuccessMessage }}</p>
-          }
+            <button
+              class="btn"
+              type="button"
+              (click)="adminAddNewGuest()"
+              [disabled]="adminAddingGuest || adminGuestsLoading"
+            >
+              {{ adminAddingGuest ? 'Saving...' : 'Add guest' }}
+            </button>
+
+            @if (adminSuccessMessage) {
+              <p class="admin-success">{{ adminSuccessMessage }}</p>
+            }
           </div>
 
           <h4 class="admin-subheading admin-table-heading">Saved invitations</h4>
@@ -71,8 +98,11 @@
               <table class="admin-guest-table">
                 <thead>
                   <tr>
+                    <th>Display</th>
                     <th>Title</th>
+                    <th>Type</th>
                     <th>Name</th>
+                    <th>Other names</th>
                     <th>Invited</th>
                     <th>RSVP</th>
                     <th>Attending</th>
@@ -82,11 +112,32 @@
                 <tbody>
                   @for (g of adminGuests; track g.id) {
                     <tr>
+                      <td class="admin-cell-display">{{ formatGuestDisplay(g) }}</td>
                       <td>
-                        <input type="text" class="admin-table-input" [(ngModel)]="g.title" />
+                        <select class="admin-table-input" [(ngModel)]="g.title">
+                          <option value="">(none)</option>
+                          @for (t of titleOptions; track t) {
+                            <option [value]="t">{{ t }}</option>
+                          }
+                        </select>
+                      </td>
+                      <td>
+                        <select class="admin-table-input" [(ngModel)]="g.invitationType">
+                          @for (opt of invitationTypeOptions; track opt.value) {
+                            <option [value]="opt.value">{{ opt.label }}</option>
+                          }
+                        </select>
                       </td>
                       <td>
                         <input type="text" class="admin-table-input" [(ngModel)]="g.name" />
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          class="admin-table-input admin-table-input--keywords"
+                          [(ngModel)]="g.searchKeywords"
+                          placeholder="comma-separated"
+                        />
                       </td>
                       <td>
                         <input
@@ -163,6 +214,8 @@
     </div>
   </main>
 } @else {
+  <div class="floral-frame" aria-hidden="true"></div>
+
   <div class="floating-dots" aria-hidden="true">
   <span class="dot"></span>
   <span class="dot"></span>
@@ -181,36 +234,61 @@
 <header class="hero section" id="home">
   <div class="card">
     <div class="couple-badge">
-      <span>{{ brideName | slice:0:1 | uppercase }}</span><span class="badge-amp"> &amp; </span><span>{{ groomName | slice:0:1 | uppercase }}</span>
+      <span class="badge-inner">
+        <span class="badge-initial">{{ brideName | slice:0:1 | uppercase }}</span><span class="badge-amp">&amp;</span><span class="badge-initial">{{ groomName | slice:0:1 | uppercase }}</span>
+      </span>
     </div>
     <p class="eyebrow">Together with their families</p>
-    <h1 class="couple-names">
-      <span>{{ brideName }}</span>
-      <span class="ampersand"> &amp; </span>
-      <span>{{ groomName }}</span>
+    <h1 class="couple-names" [attr.aria-label]="brideName + ' and ' + groomName">
+      <span class="name-word">
+        @for (letter of brideLetters; track $index; let i = $index) {
+          <span
+            class="name-letter"
+            [class.name-letter--space]="letter === ' '"
+            [style.animation-delay]="nameLetterDelay(i)"
+            aria-hidden="true"
+          >{{ letter === ' ' ? '\u00A0' : letter }}</span>
+        }
+      </span>
+      <span
+        class="name-letter ampersand"
+        [style.animation-delay]="nameLetterDelay(brideLetters.length)"
+        aria-hidden="true"
+      >&amp;</span>
+      <span class="name-word">
+        @for (letter of groomLetters; track $index; let i = $index) {
+          <span
+            class="name-letter"
+            [class.name-letter--space]="letter === ' '"
+            [style.animation-delay]="nameLetterDelay(i, brideLetters.length + 1)"
+            aria-hidden="true"
+          >{{ letter === ' ' ? '\u00A0' : letter }}</span>
+        }
+      </span>
     </h1>
-    <p class="subtitle">Invite you to celebrate their wedding day</p>
-    <button class="story-link" type="button" (click)="openStory()">View Our Story.</button>
-    <br />
-    <a class="btn" href="#rsvp">Confirm Attendance</a>
+    <p class="subtitle" [style.animation-delay]="subtitleRevealDelay">Invite you to celebrate their wedding day</p>
+    <div class="hero-actions">
+      <button class="story-link" type="button" (click)="openStory()">View Our Story</button>
+    </div>
   </div>
 </header>
 
 <main>
   <section class="section" id="details">
     <div class="card">
-      <h2><span class="heading-icon">✨</span>Wedding Details</h2>
+      <p class="section-eyebrow">The Celebration</p>
+      <h2>Wedding Details</h2>
       <div class="detail-grid">
         <article class="detail-item">
-          <h3><span class="heading-icon">📅</span>Date</h3>
+          <h3><span class="material-symbols-outlined heading-icon">event</span>Date</h3>
           <p>{{ date | date: 'fullDate' }}</p>
         </article>
         <article class="detail-item">
-          <h3><span class="heading-icon">⛪</span>Church Mass</h3>
+          <h3><span class="material-symbols-outlined heading-icon">church</span>Church Mass</h3>
           <p>{{ churchMassTime }}</p>
         </article>
         <article class="detail-item">
-          <h3><span class="heading-icon">🎉</span>Reception</h3>
+          <h3><span class="material-symbols-outlined heading-icon">celebration</span>Reception</h3>
           <p>{{ receptionTime }}</p>
         </article>
       </div>
@@ -219,12 +297,9 @@
 
   <section class="section" id="calendar">
     <div class="card">
-      <h2><span class="heading-icon">💜</span>Save the Date</h2>
+      <p class="section-eyebrow">Save the Date</p>
+      <h2>{{ monthName }} {{ year }}</h2>
       <div class="calendar">
-        <div class="calendar-header">
-          <span>{{ monthName }}</span>
-          <span>{{ year }}</span>
-        </div>
         <div class="calendar-grid calendar-days">
           @for (day of calendarDays; track day) {
             <span>{{ day }}</span>
@@ -243,21 +318,28 @@
 
   <section class="section" id="location">
     <div class="card">
-      <h2><span class="heading-icon">📍</span>Locations</h2>
+      <p class="section-eyebrow">Find Your Way</p>
+      <h2>The Locations</h2>
       <div class="detail-grid">
         <article class="detail-item">
-          <h3><span class="heading-icon">⛪</span>Church Ceremony</h3>
+          <h3><span class="material-symbols-outlined heading-icon">church</span>Church Ceremony</h3>
           <p>{{ churchName }}</p>
           <p>{{ churchAddress }}</p>
           <p class="time-line"><strong>Mass Time:</strong> {{ churchMassTime }}</p>
-          <a class="btn map-btn" [href]="churchMapUrl" target="_blank" rel="noopener noreferrer">View on map</a>
+          <a class="btn map-btn" [href]="churchMapUrl" target="_blank" rel="noopener noreferrer">
+            View Map
+            <span class="material-symbols-outlined" style="font-size: 1rem;">arrow_forward</span>
+          </a>
         </article>
         <article class="detail-item">
-          <h3><span class="heading-icon">🏛️</span>Reception Venue</h3>
+          <h3><span class="material-symbols-outlined heading-icon">restaurant</span>Reception Venue</h3>
           <p>{{ receptionVenueName }}</p>
           <p>{{ receptionAddress }}</p>
           <p class="time-line"><strong>Reception Time:</strong> {{ receptionTime }}</p>
-          <a class="btn map-btn" [href]="receptionMapUrl" target="_blank" rel="noopener noreferrer">View on map</a>
+          <a class="btn map-btn" [href]="receptionMapUrl" target="_blank" rel="noopener noreferrer">
+            View Map
+            <span class="material-symbols-outlined" style="font-size: 1rem;">arrow_forward</span>
+          </a>
         </article>
       </div>
     </div>
@@ -265,7 +347,8 @@
 
   <section class="section" id="rsvp">
     <div class="card">
-      <h2><span class="heading-icon">💌</span>RSVP</h2>
+      <p class="section-eyebrow">Kindly Respond</p>
+      <h2>RSVP</h2>
       <p>Please let us know if you can join us.</p>
 
       @if (!hasApi) {
@@ -273,13 +356,16 @@
       } @else {
         <form (ngSubmit)="submitRsvp()">
           <label for="guestSearch">Find your invitation</label>
-          <p class="field-hint">Type at least 2 letters to search by name or title.</p>
+          <p class="field-hint">
+            Type at least 2 letters to search. You can search by the invitation name, the title,
+            or any family member's name listed on the invitation.
+          </p>
           <input
             id="guestSearch"
             name="guestSearch"
             type="search"
             autocomplete="off"
-            placeholder="Search by name or title…"
+            placeholder="Search by your name…"
             [(ngModel)]="guestSearchQuery"
             (ngModelChange)="onGuestSearchChange()"
           />
@@ -291,7 +377,7 @@
               @for (g of guestSearchResults; track g.id) {
                 <li>
                   <button type="button" class="guest-pick" (click)="selectGuest(g)">
-                    <span class="guest-pick-name">{{ g.title }} {{ g.name }}</span>
+                    <span class="guest-pick-name">{{ formatGuestDisplay(g) }}</span>
                     <span class="guest-pick-count">{{ g.invitedCount }} invited</span>
                   </button>
                 </li>
@@ -307,7 +393,7 @@
                 <span class="guest-selected-label">Your invitation</span>
                 <button type="button" class="guest-clear" (click)="clearGuestSelection()">Change</button>
               </div>
-              <p class="guest-selected-readonly">{{ selectedGuest.title }} {{ selectedGuest.name }}</p>
+              <p class="guest-selected-readonly">{{ formatGuestDisplay(selectedGuest) }}</p>
               <p class="guest-selected-meta">{{ selectedGuest.invitedCount }} seat(s) on this invitation</p>
             </div>
 
@@ -367,12 +453,8 @@
 
 @if (isStoryOpen) {
   <div class="story-modal" role="dialog" aria-modal="true" aria-label="Our story gallery" (click)="closeStory()">
-    <div class="story-modal-content" (click)="$event.stopPropagation()">
+    <div class="story-modal-content story-modal-content--photo-only" (click)="$event.stopPropagation()">
       <button class="story-close" type="button" aria-label="Close story" (click)="closeStory(); $event.stopPropagation()">×</button>
-      <div class="story-header">
-        <h3>Our Story</h3>
-        <p>Moments that led us here</p>
-      </div>
 
       <div class="story-book">
         <button class="story-nav prev" type="button" aria-label="Previous story" (click)="previousStory()">‹</button>
@@ -383,10 +465,6 @@
               <article class="story-slide" [class.active]="i === activeStoryIndex">
                 <div class="story-photo-wrap">
                   <img [src]="slide.imageUrl" [alt]="slide.title" class="story-photo" />
-                </div>
-                <div class="story-caption">
-                  <h4>{{ slide.title }}</h4>
-                  <p>{{ slide.caption }}</p>
                 </div>
               </article>
             }

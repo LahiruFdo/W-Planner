@@ -36,11 +36,16 @@ async function listGuests(): Promise<HttpResponseInit> {
     })) {
       const rowKey = String(entity.rowKey);
       const e = entity as Record<string, unknown>;
+      const explicitType = String(e.invitationType ?? '').trim();
+      const legacyType = String(e.guestType ?? '').trim();
+      const invitationType = explicitType || legacyType || 'single';
       guests.push({
         id: rowKey,
         title: String(e.title ?? ''),
-        guestType: String(e.guestType ?? ''),
+        invitationType,
+        guestType: invitationType,
         name: String(e.name ?? ''),
+        searchKeywords: String(e.searchKeywords ?? ''),
         invitedCount: Number(e.invitedCount ?? 1),
         confirmed: String(e.confirmed ?? '0'),
         isComing: String(e.isComing ?? ''),
@@ -64,10 +69,15 @@ async function listGuests(): Promise<HttpResponseInit> {
 interface UpsertBody {
   id?: string;
   title?: string;
+  invitationType?: string;
   guestType?: string;
   name?: string;
+  searchKeywords?: string;
   invitedCount?: number;
 }
+
+const ALLOWED_TITLES = ['Mr.', 'Mrs.', 'Ms.', 'Rev. Fr.', 'Rev. Sr.'];
+const ALLOWED_INVITATION_TYPES = ['single', 'couple', 'family'];
 
 async function upsertGuest(request: HttpRequest): Promise<HttpResponseInit> {
   const cs = requireConnectionString();
@@ -90,11 +100,24 @@ async function upsertGuest(request: HttpRequest): Promise<HttpResponseInit> {
   }
 
   const title = (body.title ?? '').trim();
-  const guestType = (body.guestType ?? '').trim();
+  const invitationTypeRaw = (body.invitationType ?? body.guestType ?? '').trim().toLowerCase();
+  const invitationType = ALLOWED_INVITATION_TYPES.includes(invitationTypeRaw)
+    ? invitationTypeRaw
+    : 'single';
   const name = (body.name ?? '').trim();
+  const searchKeywords = (body.searchKeywords ?? '').trim();
   const invitedRaw = body.invitedCount;
   const invited = typeof invitedRaw === 'number' ? invitedRaw : Number(invitedRaw);
 
+  if (title && !ALLOWED_TITLES.includes(title)) {
+    return withCors({
+      status: 400,
+      jsonBody: {
+        ok: false,
+        error: `title must be one of: ${ALLOWED_TITLES.join(', ')}`
+      }
+    });
+  }
   if (!name) {
     return withCors({ status: 400, jsonBody: { ok: false, error: 'name is required.' } });
   }
@@ -126,8 +149,10 @@ async function upsertGuest(request: HttpRequest): Promise<HttpResponseInit> {
     partitionKey: GUEST_PARTITION_KEY,
     rowKey,
     title,
-    guestType,
+    invitationType,
+    guestType: invitationType, // keep legacy column populated for older readers
     name,
+    searchKeywords,
     invitedCount: String(Math.floor(invited)),
     confirmed,
     isComing,

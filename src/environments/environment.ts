@@ -1,17 +1,15 @@
 export const environment = {
-  brideName: 'Bride Name',
-  groomName: 'Groom Name',
-  weddingDateIso: '2026-12-20',
-  churchName: 'St. Mary Church',
-  churchMassTime: '10:30 AM',
-  churchAddress: 'Church Street, City Center',
-  churchMapUrl: 'https://maps.google.com',
-  receptionVenueName: 'Grand Orchid Banquet Hall',
-  receptionTime: '6:30 PM onwards',
-  receptionAddress: '123 Celebration Avenue, City Center',
-  receptionMapUrl: 'https://maps.google.com',
-  /** Same-origin `/api` on Azure Static Web Apps; use `ng serve --proxy-config proxy.conf.json` locally */
+  brideName: 'Sapuni',
+  groomName: 'Lahiru',
+  weddingDateIso: '2026-12-12',
+  churchName: "St. Anne's Church",
+  churchMassTime: '09:00 AM',
+  churchAddress: 'Beruwala',
+  churchMapUrl: 'https://maps.app.goo.gl/HuUPQNGUD7CbotuJ9',
+  receptionVenueName: 'Tangerine Beach Hotel',
+  receptionTime: '11:00 AM onwards',
+  receptionAddress: 'Kalutara',
+  receptionMapUrl: 'https://maps.app.goo.gl/Qp4u63gv7Qd4RhH98',
   apiBaseUrl: '/api',
-  /** Optional legacy webhook; RSVP uses apiBaseUrl when set */
   googleApiUrl: ''
 };

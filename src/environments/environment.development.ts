@@ -5,11 +5,11 @@ export const environment = {
   churchName: "St. Anne's Church",
   churchMassTime: '09:00 AM',
   churchAddress: 'Beruwala',
-  churchMapUrl: 'https://maps.google.com',
+  churchMapUrl: 'https://maps.app.goo.gl/HuUPQNGUD7CbotuJ9',
   receptionVenueName: 'Tangerine Beach Hotel',
   receptionTime: '11:00 AM onwards',
   receptionAddress: 'Kalutara',
-  receptionMapUrl: 'https://maps.google.com',
+  receptionMapUrl: 'https://maps.app.goo.gl/Qp4u63gv7Qd4RhH98',
   apiBaseUrl: '/api',
   googleApiUrl: ''
 };

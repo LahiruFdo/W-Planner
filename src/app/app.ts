@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostBinding, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription, firstValueFrom, interval } from 'rxjs';
 import { environment } from '../environments/environment';
@@ -11,11 +11,16 @@ export interface StorySlide {
   caption: string;
 }
 
+export type InvitationType = 'single' | 'couple' | 'family';
+export type GuestTitle = '' | 'Mr.' | 'Mrs.' | 'Ms.' | 'Rev. Fr.' | 'Rev. Sr.';
+
 export interface GuestSearchResult {
   id: string;
   title: string;
-  guestType: string;
+  invitationType: string;
+  guestType: string; // backward compat alias for invitationType
   name: string;
+  searchKeywords: string;
   invitedCount: number;
 }
 
@@ -24,6 +29,13 @@ export interface AdminGuest extends GuestSearchResult {
   isComing?: string;
   finalCount?: string;
 }
+
+export const GUEST_TITLE_OPTIONS: GuestTitle[] = ['Mr.', 'Mrs.', 'Ms.', 'Rev. Fr.', 'Rev. Sr.'];
+export const INVITATION_TYPE_OPTIONS: { value: InvitationType; label: string }[] = [
+  { value: 'single', label: 'Single' },
+  { value: 'couple', label: 'Couple' },
+  { value: 'family', label: 'Family' }
+];
 
 @Component({
   selector: 'app-root',
@@ -89,16 +101,21 @@ export class App implements OnInit, OnDestroy {
   protected adminSavingGuestId: string | null = null;
   protected adminSuccessMessage = '';
   protected adminGuests: AdminGuest[] = [];
+  protected readonly titleOptions = GUEST_TITLE_OPTIONS;
+  protected readonly invitationTypeOptions = INVITATION_TYPE_OPTIONS;
+
   protected adminNewGuest: {
     title: string;
-    guestType: string;
+    invitationType: string;
     name: string;
+    searchKeywords: string;
     invitedCount: number;
     id?: string;
   } = {
     title: '',
-    guestType: '',
+    invitationType: 'single',
     name: '',
+    searchKeywords: '',
     invitedCount: 1
   };
   protected adminStorySlides: StorySlide[] = [];
@@ -119,6 +136,82 @@ export class App implements OnInit, OnDestroy {
   protected activeStoryIndex = 0;
   private storyAutoPlaySub: Subscription | null = null;
   private guestSearchTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /**
+   * Build the formatted invitation display string from the stored fields.
+   * - single:  "{title} {name}"
+   * - couple:  "Mr. & Mrs. {name}"
+   * - family:  "{title} {name} & Family"
+   */
+  protected formatGuestDisplay(
+    g: { title?: string; invitationType?: string; guestType?: string; name?: string } | null | undefined
+  ): string {
+    if (!g) return '';
+    const title = (g.title ?? '').trim();
+    const type = ((g.invitationType ?? g.guestType ?? '').trim() || 'single').toLowerCase();
+    const name = (g.name ?? '').trim();
+
+    if (type === 'couple') {
+      return `Mr. & Mrs. ${name}`.trim();
+    }
+    if (type === 'family') {
+      return [title || 'Mr.', name, '& Family'].filter(Boolean).join(' ').trim();
+    }
+    return [title, name].filter(Boolean).join(' ').trim();
+  }
+
+  protected get brideLetters(): string[] {
+    return Array.from(this.brideName ?? '');
+  }
+
+  protected get groomLetters(): string[] {
+    return Array.from(this.groomName ?? '');
+  }
+
+  protected nameLetterDelay(index: number, offset = 0): string {
+    return `${(offset + index) * 90}ms`;
+  }
+
+  private get lastLetterStartMs(): number {
+    const totalLetters = this.brideLetters.length + this.groomLetters.length + 1;
+    return (totalLetters - 1) * 90;
+  }
+
+  // Letters finish floating, then a glow-in animation plays before anything else loads.
+  private readonly nameGlowInDurationMs = 1500;
+
+  private get nameGlowInStartMs(): number {
+    // Begin glow as the last letter is settling so the two motions blend.
+    return this.lastLetterStartMs;
+  }
+
+  private get nameGlowInCompleteMs(): number {
+    return this.nameGlowInStartMs + this.nameGlowInDurationMs;
+  }
+
+  private get subtitleStartMs(): number {
+    return this.nameGlowInCompleteMs + 600;
+  }
+
+  protected get subtitleRevealDelay(): string {
+    return `${this.subtitleStartMs}ms`;
+  }
+
+  @HostBinding('style.--name-glow-in-delay')
+  protected get nameGlowInDelay(): string {
+    return `${this.nameGlowInStartMs}ms`;
+  }
+
+  @HostBinding('style.--name-glow-loop-delay')
+  protected get nameGlowLoopDelay(): string {
+    return `${this.nameGlowInCompleteMs}ms`;
+  }
+
+  @HostBinding('style.--post-subtitle-delay')
+  protected get postSubtitleDelay(): string {
+    const subtitleDuration = 1200;
+    return `${this.subtitleStartMs + subtitleDuration - 200}ms`;
+  }
 
   constructor(
     private readonly http: HttpClient,
@@ -295,8 +388,9 @@ export class App implements OnInit, OnDestroy {
     const payload = {
       id: (g.id ?? '').trim() || undefined,
       title: g.title ?? '',
-      guestType: '',
+      invitationType: (g.invitationType ?? g.guestType ?? 'single').trim() || 'single',
       name: g.name ?? '',
+      searchKeywords: g.searchKeywords ?? '',
       invitedCount
     };
 
@@ -327,8 +421,9 @@ export class App implements OnInit, OnDestroy {
 
     const payload = {
       title: this.adminNewGuest.title ?? '',
-      guestType: '',
+      invitationType: (this.adminNewGuest.invitationType ?? 'single').trim() || 'single',
       name: this.adminNewGuest.name ?? '',
+      searchKeywords: this.adminNewGuest.searchKeywords ?? '',
       invitedCount: Number(this.adminNewGuest.invitedCount)
     };
 
@@ -350,7 +445,13 @@ export class App implements OnInit, OnDestroy {
           headers: this.adminHeaders()
         })
       );
-      this.adminNewGuest = { title: '', guestType: '', name: '', invitedCount: 1 };
+      this.adminNewGuest = {
+        title: '',
+        invitationType: 'single',
+        name: '',
+        searchKeywords: '',
+        invitedCount: 1
+      };
       this.adminSuccessMessage = 'Guest added.';
       await this.adminRefreshGuests();
     } catch {
