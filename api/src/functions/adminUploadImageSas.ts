@@ -4,6 +4,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { requireAdmin } from '../lib/adminAuth';
 import { withCors, corsOptions } from '../lib/cors';
 import {
+  ensureBlobCorsConfigured,
   ensureContainersExist,
   generateUploadSasUrl,
   getBlobServiceClient,
@@ -51,6 +52,7 @@ export async function adminUploadImageSasHandler(
   }
 
   await ensureContainersExist(blobClient);
+  await ensureBlobCorsConfigured(blobClient);
 
   const sas = generateUploadSasUrl(cs, blobName, contentType);
   if (!sas) {

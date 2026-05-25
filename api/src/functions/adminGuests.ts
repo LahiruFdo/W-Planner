@@ -99,7 +99,15 @@ async function upsertGuest(request: HttpRequest): Promise<HttpResponseInit> {
     return withCors({ status: 400, jsonBody: { ok: false, error: 'Invalid JSON body.' } });
   }
 
-  const title = (body.title ?? '').trim();
+  const titleRaw = (body.title ?? '').trim();
+  // Accept any title string but prefer the canonical capitalization when it
+  // matches one of the well-known options. Legacy/free-form titles are passed
+  // through unchanged rather than rejected.
+  const canonicalTitle = ALLOWED_TITLES.find(
+    (t) => t.toLowerCase() === titleRaw.toLowerCase()
+  );
+  const title = canonicalTitle ?? titleRaw;
+
   const invitationTypeRaw = (body.invitationType ?? body.guestType ?? '').trim().toLowerCase();
   const invitationType = ALLOWED_INVITATION_TYPES.includes(invitationTypeRaw)
     ? invitationTypeRaw
@@ -109,15 +117,6 @@ async function upsertGuest(request: HttpRequest): Promise<HttpResponseInit> {
   const invitedRaw = body.invitedCount;
   const invited = typeof invitedRaw === 'number' ? invitedRaw : Number(invitedRaw);
 
-  if (title && !ALLOWED_TITLES.includes(title)) {
-    return withCors({
-      status: 400,
-      jsonBody: {
-        ok: false,
-        error: `title must be one of: ${ALLOWED_TITLES.join(', ')}`
-      }
-    });
-  }
   if (!name) {
     return withCors({ status: 400, jsonBody: { ok: false, error: 'name is required.' } });
   }

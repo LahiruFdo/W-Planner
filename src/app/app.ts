@@ -310,6 +310,32 @@ export class App implements OnInit, OnDestroy {
     return new HttpHeaders({ 'x-admin-key': this.adminKeyInput });
   }
 
+  /**
+   * Translate an HTTP error from one of the admin endpoints into a human
+   * message. Falls back to a sensible default if the server didn't return
+   * a structured `{ error: '...' }` body.
+   */
+  private describeAdminError(e: unknown, fallback: string): string {
+    const status = (e as { status?: number })?.status;
+    const apiError = (e as { error?: { error?: string } })?.error?.error?.trim();
+    if (status === 0) {
+      return 'Could not reach the API. Make sure the backend (Functions) is running.';
+    }
+    if (status === 401) {
+      return 'Admin key was rejected. Please log in again.';
+    }
+    if (status === 503) {
+      return apiError || 'Backend storage is not configured.';
+    }
+    if (apiError) {
+      return apiError;
+    }
+    if (status) {
+      return `${fallback} (HTTP ${status})`;
+    }
+    return fallback;
+  }
+
   private async loadAdminGuestsAndStory(): Promise<void> {
     await this.adminRefreshGuests();
     await this.loadAdminStorySlides();
@@ -456,8 +482,9 @@ export class App implements OnInit, OnDestroy {
       );
       this.adminSuccessMessage = 'Guest saved.';
       await this.adminRefreshGuests();
-    } catch {
-      this.adminError = 'Could not save guest.';
+    } catch (e: unknown) {
+      this.adminError = this.describeAdminError(e, 'Could not save guest.');
+      console.error('Save guest failed:', e);
     } finally {
       this.adminSavingGuestId = null;
       this.cdr.markForCheck();
@@ -505,8 +532,9 @@ export class App implements OnInit, OnDestroy {
       };
       this.adminSuccessMessage = 'Guest added.';
       await this.adminRefreshGuests();
-    } catch {
-      this.adminError = 'Could not add guest.';
+    } catch (e: unknown) {
+      this.adminError = this.describeAdminError(e, 'Could not add guest.');
+      console.error('Add guest failed:', e);
     } finally {
       this.adminAddingGuest = false;
       this.cdr.markForCheck();
@@ -545,8 +573,9 @@ export class App implements OnInit, OnDestroy {
       this.adminGuests = this.adminGuests.filter((x) => x.id !== id);
       this.adminSuccessMessage = 'Guest deleted.';
       await this.adminRefreshGuests();
-    } catch {
-      this.adminError = 'Could not delete guest.';
+    } catch (e: unknown) {
+      this.adminError = this.describeAdminError(e, 'Could not delete guest.');
+      console.error('Delete guest failed:', e);
     } finally {
       this.adminDeletingGuestId = null;
       this.cdr.markForCheck();
@@ -608,28 +637,68 @@ export class App implements OnInit, OnDestroy {
     this.adminStoryUploading = true;
     this.adminError = '';
     try {
-      const sasRes = await firstValueFrom(
-        this.http.post<{ uploadUrl?: string; publicUrl?: string }>(
-          this.apiUrl('manage/images/sas'),
-          { fileName: file.name, contentType: file.type },
-          { headers: this.adminHeaders() }
-        )
-      );
-
-      if (!sasRes.uploadUrl || !sasRes.publicUrl) {
-        throw new Error('Missing uploadUrl/publicUrl');
+      let sasRes: { uploadUrl?: string; publicUrl?: string };
+      try {
+        sasRes = await firstValueFrom(
+          this.http.post<{ uploadUrl?: string; publicUrl?: string }>(
+            this.apiUrl('manage/images/sas'),
+            { fileName: file.name, contentType: file.type || 'application/octet-stream' },
+            { headers: this.adminHeaders() }
+          )
+        );
+      } catch (e: unknown) {
+        const status = (e as { status?: number })?.status;
+        const apiError =
+          (e as { error?: { error?: string } })?.error?.error ?? '';
+        if (status === 401) {
+          throw new Error('Admin key was rejected. Please log in again.');
+        }
+        if (status === 503) {
+          throw new Error(
+            apiError ||
+              'Storage is not configured on the server. Set STORAGE_CONNECTION_STRING for the Function App.'
+          );
+        }
+        throw new Error(
+          apiError || `Could not get an upload URL (HTTP ${status ?? 'network error'}).`
+        );
       }
 
-      const putRes = await fetch(sasRes.uploadUrl, {
-        method: 'PUT',
-        body: file,
-        headers: {
-          'x-ms-blob-type': 'BlockBlob',
-          'Content-Type': file.type
-        }
-      });
+      if (!sasRes.uploadUrl || !sasRes.publicUrl) {
+        throw new Error('Server returned an empty upload URL.');
+      }
+
+      const contentType = file.type || 'application/octet-stream';
+      let putRes: Response;
+      try {
+        putRes = await fetch(sasRes.uploadUrl, {
+          method: 'PUT',
+          body: file,
+          headers: {
+            'x-ms-blob-type': 'BlockBlob',
+            'Content-Type': contentType
+          }
+        });
+      } catch (e: unknown) {
+        throw new Error(
+          'Browser could not reach Azure Blob Storage. This is usually a CORS or ' +
+            'network issue. Confirm the storage account allows your origin under ' +
+            '"Resource sharing (CORS)" for the Blob service.'
+        );
+      }
+
       if (!putRes.ok) {
-        throw new Error(`Upload failed with status ${putRes.status}`);
+        let azureMessage = '';
+        try {
+          const text = await putRes.text();
+          const match = /<Message>([\s\S]*?)<\/Message>/i.exec(text);
+          azureMessage = match?.[1]?.trim() ?? text.slice(0, 240);
+        } catch {
+          /* body unreadable — keep status */
+        }
+        throw new Error(
+          `Upload failed (HTTP ${putRes.status})${azureMessage ? `: ${azureMessage}` : ''}`
+        );
       }
 
       this.adminStorySlides.unshift({
@@ -637,8 +706,11 @@ export class App implements OnInit, OnDestroy {
         title: 'New slide',
         caption: ''
       });
-    } catch {
-      this.adminError = 'Could not upload image.';
+      this.adminSuccessMessage = 'Image uploaded.';
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Could not upload image.';
+      this.adminError = msg;
+      console.error('Story image upload failed:', e);
     } finally {
       this.adminStoryUploading = false;
       input.value = '';

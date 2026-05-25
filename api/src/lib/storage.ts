@@ -51,6 +51,37 @@ export async function ensureContainersExist(client: BlobServiceClient): Promise<
   await client.getContainerClient(IMAGES_CONTAINER).createIfNotExists({ access: 'blob' });
 }
 
+// Browser uploads via SAS hit the storage account directly, which means the
+// storage account itself must allow the app's origin for PUT requests. Without
+// these CORS rules, the preflight fails and the upload looks like a generic
+// network error to the user.
+let corsConfigured = false;
+export async function ensureBlobCorsConfigured(client: BlobServiceClient): Promise<void> {
+  if (corsConfigured) {
+    return;
+  }
+  try {
+    const allowedOrigins =
+      process.env.STORAGE_CORS_ORIGINS?.trim() || '*';
+    await client.setProperties({
+      cors: [
+        {
+          allowedOrigins,
+          allowedMethods: 'GET,HEAD,PUT,OPTIONS',
+          allowedHeaders: '*',
+          exposedHeaders: '*',
+          maxAgeInSeconds: 3600
+        }
+      ]
+    });
+    corsConfigured = true;
+  } catch (e) {
+    // Don't block the upload flow if CORS can't be set (e.g. the storage
+    // identity lacks permissions). Surface to the function logs instead.
+    console.error('Failed to set Blob CORS rules:', e);
+  }
+}
+
 export function generateUploadSasUrl(
   connectionString: string,
   blobName: string,
