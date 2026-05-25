@@ -168,6 +168,38 @@ async function upsertGuest(request: HttpRequest): Promise<HttpResponseInit> {
   return withCors({ status: 200, jsonBody: { ok: true, id: rowKey } });
 }
 
+async function deleteGuest(request: HttpRequest): Promise<HttpResponseInit> {
+  const cs = requireConnectionString();
+  if (!cs) {
+    return withCors({ status: 503, jsonBody: { ok: false, error: 'Storage is not configured.' } });
+  }
+
+  const table = getTableClient();
+  if (!table) {
+    return withCors({ status: 503, jsonBody: { ok: false, error: 'Table client unavailable.' } });
+  }
+
+  await ensureTable(table);
+
+  // Accept the id from either the route parameter or a `?id=` query string.
+  const id = (request.params?.id ?? request.query.get('id') ?? '').trim();
+  if (!id) {
+    return withCors({ status: 400, jsonBody: { ok: false, error: 'id is required.' } });
+  }
+
+  try {
+    await table.deleteEntity(GUEST_PARTITION_KEY, id);
+  } catch (e: unknown) {
+    const statusCode = (e as { statusCode?: number })?.statusCode;
+    if (statusCode === 404) {
+      return withCors({ status: 404, jsonBody: { ok: false, error: 'Guest not found.' } });
+    }
+    return withCors({ status: 500, jsonBody: { ok: false, error: 'Could not delete guest.' } });
+  }
+
+  return withCors({ status: 200, jsonBody: { ok: true, id } });
+}
+
 export async function adminGuestsHandler(
   request: HttpRequest,
   _context: InvocationContext
@@ -187,13 +219,23 @@ export async function adminGuestsHandler(
   if (request.method === 'PUT') {
     return upsertGuest(request);
   }
+  if (request.method === 'DELETE') {
+    return deleteGuest(request);
+  }
 
   return withCors({ status: 405, jsonBody: { error: 'Method not allowed.' } });
 }
 
 app.http('adminGuests', {
-  methods: ['GET', 'PUT', 'OPTIONS'],
+  methods: ['GET', 'PUT', 'DELETE', 'OPTIONS'],
   authLevel: 'anonymous',
   route: 'manage/guests',
+  handler: adminGuestsHandler
+});
+
+app.http('adminGuestById', {
+  methods: ['DELETE', 'OPTIONS'],
+  authLevel: 'anonymous',
+  route: 'manage/guests/{id}',
   handler: adminGuestsHandler
 });

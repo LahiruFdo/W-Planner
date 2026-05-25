@@ -100,6 +100,7 @@ export class App implements OnInit, OnDestroy {
   protected adminGuestsLoading = false;
   protected adminAddingGuest = false;
   protected adminSavingGuestId: string | null = null;
+  protected adminDeletingGuestId: string | null = null;
   protected adminSuccessMessage = '';
   protected adminGuests: AdminGuest[] = [];
   protected readonly titleOptions = GUEST_TITLE_OPTIONS;
@@ -508,6 +509,46 @@ export class App implements OnInit, OnDestroy {
       this.adminError = 'Could not add guest.';
     } finally {
       this.adminAddingGuest = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  protected async adminDeleteGuest(g: AdminGuest): Promise<void> {
+    if (!this.adminAuthed) {
+      return;
+    }
+    const id = (g.id ?? '').trim();
+    if (!id) {
+      this.adminError = 'Cannot delete an unsaved guest.';
+      return;
+    }
+
+    const label = this.formatGuestDisplay(g) || g.name || 'this guest';
+    const confirmed =
+      typeof window === 'undefined'
+        ? true
+        : window.confirm(`Delete ${label}? This cannot be undone.`);
+    if (!confirmed) {
+      return;
+    }
+
+    this.adminDeletingGuestId = id;
+    this.adminError = '';
+    this.adminSuccessMessage = '';
+    try {
+      await firstValueFrom(
+        this.http.delete(this.apiUrl(`manage/guests/${encodeURIComponent(id)}`), {
+          headers: this.adminHeaders()
+        })
+      );
+      // Optimistic local removal so the UI feels instant even before refresh resolves.
+      this.adminGuests = this.adminGuests.filter((x) => x.id !== id);
+      this.adminSuccessMessage = 'Guest deleted.';
+      await this.adminRefreshGuests();
+    } catch {
+      this.adminError = 'Could not delete guest.';
+    } finally {
+      this.adminDeletingGuestId = null;
       this.cdr.markForCheck();
     }
   }

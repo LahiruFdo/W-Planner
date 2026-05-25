@@ -150,14 +150,26 @@
                       <td>{{ g.isComing || 'pending' }}</td>
                       <td>{{ g.finalCount || '—' }}</td>
                       <td>
-                        <button
-                          class="btn admin-save"
-                          type="button"
-                          (click)="adminUpsertGuest(g)"
-                          [disabled]="adminSavingGuestId === g.id"
-                        >
-                          {{ adminSavingGuestId === g.id ? 'Saving...' : 'Save' }}
-                        </button>
+                        <div class="admin-row-actions">
+                          <button
+                            class="btn admin-save"
+                            type="button"
+                            (click)="adminUpsertGuest(g)"
+                            [disabled]="adminSavingGuestId === g.id || adminDeletingGuestId === g.id"
+                          >
+                            {{ adminSavingGuestId === g.id ? 'Saving...' : 'Save' }}
+                          </button>
+                          <button
+                            class="admin-delete"
+                            type="button"
+                            aria-label="Delete invitation"
+                            title="Delete invitation"
+                            (click)="adminDeleteGuest(g)"
+                            [disabled]="adminSavingGuestId === g.id || adminDeletingGuestId === g.id"
+                          >
+                            {{ adminDeletingGuestId === g.id ? '...' : 'Delete' }}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   }

@@ -1889,6 +1889,43 @@ footer.section {
   margin: 0;
 }
 
+.admin-row-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+  min-width: 6.5rem;
+}
+
+.admin-delete {
+  appearance: none;
+  border: 1px solid #d4524a;
+  background: transparent;
+  color: #b53b34;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 180ms ease, color 180ms ease, transform 120ms ease;
+}
+
+.admin-delete:hover:not(:disabled),
+.admin-delete:focus-visible:not(:disabled) {
+  background: #b53b34;
+  color: #ffffff;
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.admin-delete:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .admin-story-actions {
   display: flex;
   gap: 1rem;
