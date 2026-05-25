@@ -1119,6 +1119,74 @@ footer p {
   margin: 1.5rem auto 0;
 }
 
+/* --- Scroll cue: "View More" pill with a gently bouncing chevron --- */
+.hero-scroll-cue {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1.4rem 0.7rem 1.5rem;
+  border-radius: 999px;
+  border: 1px solid rgb(184 157 217 / 60%);
+  background: rgb(255 255 255 / 70%);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: var(--primary);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 280ms ease, color 280ms ease, transform 180ms ease,
+    box-shadow 280ms ease;
+  opacity: 0;
+  animation: heroScrollCueFadeIn 700ms cubic-bezier(0.22, 1, 0.32, 1)
+    var(--post-subtitle-delay, 0ms) forwards;
+}
+
+.hero-scroll-cue:hover,
+.hero-scroll-cue:focus-visible {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgb(107 74 143 / 22%);
+  outline: none;
+}
+
+.hero-scroll-arrow {
+  font-size: 1.15rem !important;
+  line-height: 1;
+  animation: heroScrollArrowBob 1.6s ease-in-out infinite;
+}
+
+.hero-scroll-cue:hover .hero-scroll-arrow,
+.hero-scroll-cue:focus-visible .hero-scroll-arrow {
+  animation-play-state: paused;
+}
+
+@keyframes heroScrollCueFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroScrollArrowBob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(3px);
+  }
+}
+
 .hero-actions .story-link,
 .hero-actions .btn {
   margin: 0;
@@ -1611,6 +1679,8 @@ footer.section {
   .couple-badge::after,
   .hero .story-link,
   .hero .card .btn,
+  .hero-scroll-cue,
+  .hero-scroll-arrow,
   footer.section {
     animation: none;
     transition: none;
@@ -1620,6 +1690,7 @@ footer.section {
   .subtitle,
   .hero .story-link,
   .hero .card .btn,
+  .hero-scroll-cue,
   footer.section {
     opacity: 1;
     transform: none;

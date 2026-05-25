@@ -11,6 +11,13 @@ html {
   overflow-x: clip;
   min-height: 100dvh;
   background-color: #faf6fc;
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 body {

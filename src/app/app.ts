@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { ChangeDetectorRef, Component, HostBinding, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Title } from '@angular/platform-browser';
 import { Subscription, firstValueFrom, interval } from 'rxjs';
 import { environment } from '../environments/environment';
 
@@ -215,8 +216,56 @@ export class App implements OnInit, OnDestroy {
 
   constructor(
     private readonly http: HttpClient,
-    private readonly cdr: ChangeDetectorRef
+    private readonly cdr: ChangeDetectorRef,
+    private readonly titleService: Title
   ) {}
+
+  /**
+   * Build an SVG data URI showing "{B}&{G}" — the first letters of the bride
+   * and groom names separated by an ampersand — for use as a browser tab icon.
+   */
+  private buildFaviconDataUri(brideInitial: string, groomInitial: string): string {
+    const safeBride = (brideInitial || 'B').toUpperCase();
+    const safeGroom = (groomInitial || 'G').toUpperCase();
+    const svg =
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">` +
+      `<rect width="64" height="64" rx="14" fill="#6b4a8f"/>` +
+      `<text x="32" y="44" text-anchor="middle" ` +
+      `font-family="Georgia, 'Playfair Display', serif" font-size="34" font-weight="700" fill="#ffffff">` +
+      `${safeBride}<tspan font-size="22" dx="0" dy="-2" fill="#dcc8f0">&amp;</tspan>` +
+      `<tspan dy="2">${safeGroom}</tspan>` +
+      `</text>` +
+      `</svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  }
+
+  /**
+   * Set the browser tab title and favicon to reflect the couple's initials
+   * (e.g. "S & L · Wedding").
+   */
+  private applyBrowserBranding(): void {
+    const brideInitial = (this.brideName ?? '').trim().charAt(0).toUpperCase();
+    const groomInitial = (this.groomName ?? '').trim().charAt(0).toUpperCase();
+    if (brideInitial && groomInitial) {
+      this.titleService.setTitle(`${brideInitial} & ${groomInitial} · Wedding`);
+    } else {
+      this.titleService.setTitle('Wedding Invitation');
+    }
+
+    if (typeof document === 'undefined') {
+      return;
+    }
+    const href = this.buildFaviconDataUri(brideInitial, groomInitial);
+    let link = document.getElementById('app-favicon') as HTMLLinkElement | null;
+    if (!link) {
+      link = document.createElement('link');
+      link.id = 'app-favicon';
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    link.type = 'image/svg+xml';
+    link.href = href;
+  }
 
   protected get isAdminRoute(): boolean {
     if (typeof window === 'undefined') {
@@ -226,6 +275,7 @@ export class App implements OnInit, OnDestroy {
   }
 
   async ngOnInit(): Promise<void> {
+    this.applyBrowserBranding();
     await this.loadStorySlides();
     if (this.isAdminRoute) {
       const saved = window.sessionStorage.getItem('adminKey') ?? '';
