@@ -1,0 +1,10 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "w-planner",
+  "compatibility_date": "2026-10-08",
+
+  "assets": {
+    "directory": "./dist/wedding-invitation/browser",
+    "not_found_handling": "single-page-application"
+  }
+}
