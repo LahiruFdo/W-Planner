@@ -3,7 +3,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { ChangeDetectorRef, Component, HostBinding, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
-import { Subscription, firstValueFrom, interval } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { environment } from '../environments/environment';
 
 export interface StorySlide {
@@ -63,34 +63,16 @@ export class App implements OnInit, OnDestroy {
   protected readonly calendarDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   protected readonly dayCells = this.buildCalendarCells(this.date);
 
-  private static readonly defaultStorySlides: StorySlide[] = [
-    {
-      imageUrl:
-        'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1200&q=80',
-      title: 'Where It Started',
-      caption: 'A simple hello that turned into forever.'
-    },
-    {
-      imageUrl:
-        'https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=1200&q=80',
-      title: 'Growing Together',
-      caption: 'Every day became brighter side by side.'
-    },
-    {
-      imageUrl:
-        'https://images.unsplash.com/photo-1494774157365-9e04c6720e47?auto=format&fit=crop&w=1200&q=80',
-      title: 'A Promise',
-      caption: 'From laughter to love, from love to a promise.'
-    },
-    {
-      imageUrl:
-        'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=1200&q=80',
-      title: 'Our Big Day',
-      caption: 'Now we begin our new chapter with you.'
-    }
+  // Guests move through the invitation one section at a time (no page scroll),
+  // using the Back / Next buttons under each section.
+  protected readonly sections = [
+    { id: 'home', label: 'Home' },
+    { id: 'details', label: 'Wedding Details' },
+    { id: 'calendar', label: 'Save the Date' },
+    { id: 'location', label: 'The Venues' },
+    { id: 'rsvp', label: 'RSVP' }
   ];
-
-  protected storySlides: StorySlide[] = [...App.defaultStorySlides];
+  protected activeSectionIndex = 0;
 
   // Admin dashboard (served under `/admin` on the same SPA)
   protected adminKeyInput = '';
@@ -134,9 +116,6 @@ export class App implements OnInit, OnDestroy {
   protected attendingCountError = '';
   protected submitting = false;
   protected statusMessage = '';
-  protected isStoryOpen = false;
-  protected activeStoryIndex = 0;
-  private storyAutoPlaySub: Subscription | null = null;
   private guestSearchTimer: ReturnType<typeof setTimeout> | null = null;
 
   /**
@@ -170,13 +149,34 @@ export class App implements OnInit, OnDestroy {
     return Array.from(this.groomName ?? '');
   }
 
+  // Invitation cover: the shared link lands on a cover showing only the S|L
+  // monogram and a "View Invitation" button. The page content is only rendered
+  // once the guest taps the button, so every entrance animation starts from
+  // that moment while the cover fades away.
+  protected isCoverReady = false;
+  protected isInvitationOpen = false;
+  protected isCoverDismissed = false;
+  private readonly coverFadeMs = 900;
+  private coverTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Pause after opening (while the cover fades) before the names float in.
+  private readonly badgeEntranceDurationMs = 500;
+
+  private get badgeEntranceStartMs(): number {
+    return 0;
+  }
+
+  private get badgeEntranceCompleteMs(): number {
+    return this.badgeEntranceStartMs + this.badgeEntranceDurationMs;
+  }
+
   protected nameLetterDelay(index: number, offset = 0): string {
-    return `${(offset + index) * 90}ms`;
+    return `${this.badgeEntranceCompleteMs + (offset + index) * 90}ms`;
   }
 
   private get lastLetterStartMs(): number {
     const totalLetters = this.brideLetters.length + this.groomLetters.length + 1;
-    return (totalLetters - 1) * 90;
+    return this.badgeEntranceCompleteMs + (totalLetters - 1) * 90;
   }
 
   // Letters finish floating, then a glow-in animation plays before anything else loads.
@@ -197,6 +197,21 @@ export class App implements OnInit, OnDestroy {
 
   protected get subtitleRevealDelay(): string {
     return `${this.subtitleStartMs}ms`;
+  }
+
+  @HostBinding('style.--badge-entrance-delay')
+  protected get badgeEntranceDelay(): string {
+    return `${this.badgeEntranceStartMs}ms`;
+  }
+
+  @HostBinding('style.--badge-entrance-duration')
+  protected get badgeEntranceDuration(): string {
+    return `${this.badgeEntranceDurationMs}ms`;
+  }
+
+  @HostBinding('style.--badge-breathe-delay')
+  protected get badgeBreatheDelay(): string {
+    return `${this.badgeEntranceCompleteMs}ms`;
   }
 
   @HostBinding('style.--name-glow-in-delay')
@@ -222,50 +237,15 @@ export class App implements OnInit, OnDestroy {
   ) {}
 
   /**
-   * Build an SVG data URI showing "{B}&{G}" — the first letters of the bride
-   * and groom names separated by an ampersand — for use as a browser tab icon.
-   */
-  private buildFaviconDataUri(brideInitial: string, groomInitial: string): string {
-    const safeBride = (brideInitial || 'B').toUpperCase();
-    const safeGroom = (groomInitial || 'G').toUpperCase();
-    const svg =
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">` +
-      `<rect width="64" height="64" rx="14" fill="#6b4a8f"/>` +
-      `<text x="32" y="44" text-anchor="middle" ` +
-      `font-family="Georgia, 'Playfair Display', serif" font-size="34" font-weight="700" fill="#ffffff">` +
-      `${safeBride}<tspan font-size="22" dx="0" dy="-2" fill="#dcc8f0">&amp;</tspan>` +
-      `<tspan dy="2">${safeGroom}</tspan>` +
-      `</text>` +
-      `</svg>`;
-    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-  }
-
-  /**
-   * Set the browser tab title and favicon to reflect the couple's initials
-   * (e.g. "S & L · Wedding").
+   * Set the browser tab title (e.g. "Sapuni & Lahiru · Wedding Invitation").
+   * The tab icon is the monogram PNG linked from index.html.
    */
   private applyBrowserBranding(): void {
-    const brideInitial = (this.brideName ?? '').trim().charAt(0).toUpperCase();
-    const groomInitial = (this.groomName ?? '').trim().charAt(0).toUpperCase();
-    if (brideInitial && groomInitial) {
-      this.titleService.setTitle(`${brideInitial} & ${groomInitial} · Wedding`);
+    if (this.brideName?.trim() && this.groomName?.trim()) {
+      this.titleService.setTitle(`${this.brideName} & ${this.groomName} · Wedding Invitation`);
     } else {
       this.titleService.setTitle('Wedding Invitation');
     }
-
-    if (typeof document === 'undefined') {
-      return;
-    }
-    const href = this.buildFaviconDataUri(brideInitial, groomInitial);
-    let link = document.getElementById('app-favicon') as HTMLLinkElement | null;
-    if (!link) {
-      link = document.createElement('link');
-      link.id = 'app-favicon';
-      link.rel = 'icon';
-      document.head.appendChild(link);
-    }
-    link.type = 'image/svg+xml';
-    link.href = href;
   }
 
   protected get isAdminRoute(): boolean {
@@ -277,7 +257,7 @@ export class App implements OnInit, OnDestroy {
 
   async ngOnInit(): Promise<void> {
     this.applyBrowserBranding();
-    await this.loadStorySlides();
+    this.prepareCover();
     if (this.isAdminRoute) {
       const saved = window.sessionStorage.getItem('adminKey') ?? '';
       if (saved.trim()) {
@@ -287,18 +267,71 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
+  private prepareCover(): void {
+    if (typeof window === 'undefined' || this.isAdminRoute) {
+      this.isCoverReady = true;
+      return;
+    }
+
+    // Reveal the cover's contents once the card fonts have loaded, so the
+    // monogram and script names never flash in a fallback font. The fonts are
+    // requested explicitly (`fonts.ready` alone resolves before the cover has
+    // even rendered). Cap the wait so a slow font CDN can't keep the guest
+    // staring at a blank card.
+    const fonts = (document as any).fonts;
+    const fontReady: Promise<unknown> =
+      fonts && typeof fonts.load === 'function'
+        ? Promise.all(
+            ['1em "Great Vibes"', '600 1em "Cinzel"', '1em "Playfair Display"', '1em "Cormorant Garamond"'].map(
+              (f) => fonts.load(f).catch(() => undefined)
+            )
+          )
+        : Promise.resolve();
+    const maxWait = new Promise<void>((resolve) => setTimeout(resolve, 2500));
+
+    void Promise.race([fontReady, maxWait]).then(() => {
+      this.isCoverReady = true;
+      this.cdr.markForCheck();
+    });
+  }
+
+  protected openInvitation(): void {
+    if (this.isInvitationOpen) {
+      return;
+    }
+    this.isInvitationOpen = true;
+    window.scrollTo(0, 0);
+    this.coverTimer = setTimeout(() => {
+      this.coverTimer = null;
+      this.isCoverDismissed = true;
+      this.cdr.markForCheck();
+    }, this.coverFadeMs);
+  }
+
   ngOnDestroy(): void {
-    this.stopStoryAutoPlay();
     if (this.guestSearchTimer) {
       clearTimeout(this.guestSearchTimer);
       this.guestSearchTimer = null;
     }
+    if (this.coverTimer) {
+      clearTimeout(this.coverTimer);
+      this.coverTimer = null;
+    }
   }
 
-  @HostListener('document:keydown.escape')
-  protected onEscape(): void {
-    if (this.isStoryOpen) {
-      this.closeStory();
+  // Left / right arrow keys move between sections (but not while typing).
+  @HostListener('document:keydown', ['$event'])
+  protected onKeydown(event: KeyboardEvent): void {
+    if (this.isAdminRoute || !this.isInvitationOpen) {
+      return;
+    }
+    if ((event.target as HTMLElement | null)?.closest('input, select, textarea')) {
+      return;
+    }
+    if (event.key === 'ArrowRight') {
+      this.goToSection(this.activeSectionIndex + 1);
+    } else if (event.key === 'ArrowLeft') {
+      this.goToSection(this.activeSectionIndex - 1);
     }
   }
 
@@ -600,8 +633,6 @@ export class App implements OnInit, OnDestroy {
     } finally {
       this.adminStorySaving = false;
       this.cdr.markForCheck();
-      // Keep home story modal in sync
-      await this.loadStorySlides();
     }
   }
 
@@ -792,33 +823,13 @@ export class App implements OnInit, OnDestroy {
     return true;
   }
 
-  protected openStory(): void {
-    this.activeStoryIndex = 0;
-    this.isStoryOpen = true;
-    document.body.style.overflow = 'hidden';
-    this.startStoryAutoPlay();
-  }
-
-  protected closeStory(): void {
-    this.isStoryOpen = false;
-    document.body.style.overflow = '';
-    this.stopStoryAutoPlay();
-  }
-
-  protected nextStory(): void {
-    this.activeStoryIndex = (this.activeStoryIndex + 1) % this.storySlides.length;
-    this.restartStoryAutoPlay();
-  }
-
-  protected previousStory(): void {
-    this.activeStoryIndex =
-      (this.activeStoryIndex - 1 + this.storySlides.length) % this.storySlides.length;
-    this.restartStoryAutoPlay();
-  }
-
-  protected goToStory(index: number): void {
-    this.activeStoryIndex = index;
-    this.restartStoryAutoPlay();
+  protected goToSection(index: number): void {
+    if (index < 0 || index >= this.sections.length || index === this.activeSectionIndex) {
+      return;
+    }
+    this.activeSectionIndex = index;
+    // A section that had to scroll on a small screen starts at its top again.
+    document.getElementById(this.sections[index].id)?.scrollTo(0, 0);
   }
 
   protected async submitRsvp(): Promise<void> {
@@ -895,28 +906,6 @@ export class App implements OnInit, OnDestroy {
     return `${base}/${segment}`;
   }
 
-  private async loadStorySlides(): Promise<void> {
-    if (!this.hasApi) {
-      return;
-    }
-    try {
-      const res = await firstValueFrom(
-        this.http.get<{ slides?: StorySlide[] }>(this.apiUrl('story'))
-      );
-      const slides = res.slides?.filter((s) => s.imageUrl?.trim() && s.title?.trim()) ?? [];
-      if (slides.length > 0) {
-        this.storySlides = slides.map((s) => ({
-          imageUrl: s.imageUrl.trim(),
-          title: s.title.trim(),
-          caption: (s.caption ?? '').trim()
-        }));
-        this.cdr.markForCheck();
-      }
-    } catch {
-      /* keep built-in defaults */
-    }
-  }
-
   private async runGuestSearch(): Promise<void> {
     if (!this.hasApi) {
       this.guestSearchResults = [];
@@ -959,27 +948,4 @@ export class App implements OnInit, OnDestroy {
     return cells;
   }
 
-  private startStoryAutoPlay(): void {
-    this.stopStoryAutoPlay();
-    this.storyAutoPlaySub = interval(2600).subscribe(() => {
-      if (!this.isStoryOpen) {
-        return;
-      }
-      this.activeStoryIndex = (this.activeStoryIndex + 1) % this.storySlides.length;
-      this.cdr.markForCheck();
-    });
-  }
-
-  private stopStoryAutoPlay(): void {
-    if (this.storyAutoPlaySub) {
-      this.storyAutoPlaySub.unsubscribe();
-      this.storyAutoPlaySub = null;
-    }
-  }
-
-  private restartStoryAutoPlay(): void {
-    if (this.isStoryOpen) {
-      this.startStoryAutoPlay();
-    }
-  }
 }

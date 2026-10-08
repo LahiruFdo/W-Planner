@@ -1,6 +1,6 @@
 :host {
-  --background: #faf6fc;
-  --surface: #faf6fc;
+  --background: #ffffff;
+  --surface: #ffffff;
   --surface-bright: #ffffff;
   --surface-container-lowest: #ffffff;
   --surface-container-low: #f4ecf8;
@@ -9,8 +9,8 @@
   --surface-container-highest: #ddcfe8;
   --surface-dim: #c9bbd1;
   --surface-variant: #ecdfe8;
-  --on-background: #1f1424;
-  --on-surface: #1f1424;
+  --on-background: #2a2329;
+  --on-surface: #2a2329;
   --on-surface-variant: #574165;
   --primary: #6b4a8f;
   --on-primary: #ffffff;
@@ -28,8 +28,17 @@
   --shadow-card: 0 18px 60px rgb(107 74 143 / 9%);
   --shadow-button: 0 4px 20px rgb(107 74 143 / 22%);
 
-  --font-display: "Playfair Display", "Georgia", serif;
-  --font-body: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* Gold foil + ink from the printed invitation card */
+  --gold: #b08a4c;
+  --gold-light: #d8bd85;
+  --gold-soft: rgb(176 138 76 / 35%);
+  --gold-foil: linear-gradient(170deg, #dcc08a 0%, #b38c4e 45%, #c9a565 70%, #a27c40 100%);
+  --ink: #2a2329;
+
+  --font-display: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+  --font-body: "Cormorant Garamond", Georgia, serif;
+  --font-caps: "Cinzel", "Cormorant Garamond", Georgia, serif;
+  --font-monogram: "Playfair Display", "Bodoni Moda", Georgia, serif;
   --font-script: "Great Vibes", "Brush Script MT", cursive;
 
   --section-padding: clamp(4.5rem, 12vw, 8rem);
@@ -78,39 +87,117 @@
   color: var(--outline);
 }
 
-/* --- Watercolor floral frame (fixed full-viewport backdrop) --- */
+/* --- Card florals at the page edges (fixed backdrop) ---
+   Phones / tablets: the two halves of the card's bottom border meet across the
+   bottom of the screen, and the same border turned upside down forms one band
+   across the top. Wide or landscape screens: the halves sit in the corners.
+   The section stage is sized to the free space between the florals. */
+:host {
+  --floral-w: 50vw;
+  --floral-h: calc(var(--floral-w) * 276 / 252);
+  --floral-top-h: min(calc(var(--floral-h) * 0.42), 15vh);
+  --stage-top: var(--floral-top-h);
+  --stage-bottom: min(calc(var(--floral-h) * 0.6), 24vh);
+  --stage-nav-h: 3.75rem;
+  --stage-gutter: 1rem;
+}
+
 .floral-frame {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image: url("/bg.png");
-  background-size: 100% 100%;
-  background-position: center;
-  background-repeat: no-repeat;
-  opacity: 0.55;
-  filter: saturate(1.05);
-  animation: floralFadeIn 1.6s ease-out both;
+  overflow: hidden;
 }
 
-.floral-frame::after {
-  content: "";
+.floral {
   position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at center, transparent 0%, rgb(250 246 252 / 30%) 60%, rgb(250 246 252 / 65%) 100%);
-  pointer-events: none;
+  width: var(--floral-w);
+  aspect-ratio: 252 / 276;
+  background: center / 100% 100% no-repeat;
 }
 
-@media (min-width: 1024px) {
-  .floral-frame {
-    background-size: cover;
-    opacity: 0.6;
+.floral--bl,
+.floral--tr {
+  background-image: url("/florals-left.png");
+}
+
+.floral--br,
+.floral--tl {
+  background-image: url("/florals-right.png");
+}
+
+.floral--bl {
+  left: 0;
+  bottom: 0;
+}
+
+.floral--br {
+  right: 0;
+  bottom: 0;
+}
+
+/* Top band: only the densest strip (the roses) of the upside-down border is
+   shown, fading out towards the content. Masks are in the element's own,
+   un-rotated coordinates. */
+.floral--tl,
+.floral--tr {
+  top: 0;
+  height: var(--floral-top-h);
+  aspect-ratio: auto;
+  background-size: 100% auto;
+  background-position: center bottom;
+  transform: rotate(180deg);
+  -webkit-mask-image: linear-gradient(to top, #000 55%, transparent);
+  mask-image: linear-gradient(to top, #000 55%, transparent);
+}
+
+.floral--tl {
+  left: 0;
+}
+
+.floral--tr {
+  right: 0;
+}
+
+@media (min-width: 1000px), (min-aspect-ratio: 1/1) {
+  :host {
+    --floral-w: min(26vw, 40vh);
+    --floral-top-w: min(17vw, 26vh);
+    --stage-top: 1.25rem;
+    --stage-bottom: 0.75rem;
+    --stage-gutter: calc(var(--floral-w) * 0.75);
   }
-}
 
-@media (max-width: 640px) {
-  .floral-frame {
-    opacity: 0.45;
+  /* The halves no longer meet in the middle, so fade their inner edges
+     (where the card's centre rose was split) into the paper. */
+  .floral--bl {
+    -webkit-mask-image: linear-gradient(to right, #000 62%, transparent 98%);
+    mask-image: linear-gradient(to right, #000 62%, transparent 98%);
+  }
+
+  .floral--br {
+    -webkit-mask-image: linear-gradient(to left, #000 62%, transparent 98%);
+    mask-image: linear-gradient(to left, #000 62%, transparent 98%);
+  }
+
+  .floral--tl,
+  .floral--tr {
+    width: var(--floral-top-w);
+    height: auto;
+    aspect-ratio: 252 / 276;
+    background-size: 100% 100%;
+    opacity: 0.85;
+  }
+
+  .floral--tl {
+    -webkit-mask-image: linear-gradient(to left, #000 55%, transparent 98%);
+    mask-image: linear-gradient(to left, #000 55%, transparent 98%);
+  }
+
+  .floral--tr {
+    -webkit-mask-image: linear-gradient(to right, #000 55%, transparent 98%);
+    mask-image: linear-gradient(to right, #000 55%, transparent 98%);
   }
 }
 
@@ -126,8 +213,8 @@
 .dot {
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(circle, rgb(184 157 217 / 75%), rgb(184 157 217 / 0%));
-  opacity: 0.45;
+  background: radial-gradient(circle, rgb(184 157 217 / 20%), rgb(184 157 217 / 0%));
+  opacity: 0.16;
   animation: floatDotFast 6s ease-in-out infinite alternate;
 }
 
@@ -200,85 +287,24 @@
   margin: 0 0 1.5rem;
   font-size: 0.78rem;
   font-weight: 500;
+  /* Stays hidden during the badge entrance and fades in once the monogram
+     has settled into place. */
+  opacity: 0;
+  animation: eyebrowReveal 900ms cubic-bezier(0.22, 1, 0.32, 1)
+    var(--badge-breathe-delay, 1400ms) forwards;
 }
 
-/* --- Monogram badge (the spinning circle with bride/groom initials) --- */
-.couple-badge {
-  margin: 0 auto 2rem;
-  width: 110px;
-  height: 110px;
-  border-radius: 50%;
-  border: 1px solid var(--primary-container);
-  background: transparent;
-  color: var(--primary);
-  font-size: 1.7rem;
-  font-family: var(--font-script);
-  font-weight: 400;
-  letter-spacing: 0;
-  position: relative;
-  box-sizing: border-box;
-  /* Outer badge stays overflow: visible so the orbital ring + dots can show. */
-  overflow: visible;
-  animation: badgeBreathe 6s ease-in-out infinite;
-}
-
-/* Inner wrapper handles clipping + glyph centering so the badge's ::before/::after
-   orbital decorations can extend outside the circle without being clipped. */
-.badge-inner {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.04em;
-  border-radius: 50%;
-  overflow: hidden;
-  line-height: 0.9;
-  /* Optical nudge: Great Vibes carries heavier ink on the right of each glyph,
-     so a tiny shift left brings the monogram visually onto the badge's centerline. */
-  padding-right: 0.18em;
-}
-
-.badge-initial {
-  display: inline-block;
-  line-height: 0.9;
-}
-
-.badge-amp {
-  display: inline-block;
-  font-size: 0.7em;
-  line-height: 0.9;
-  color: var(--primary-container);
-  align-self: center;
-}
-
-.couple-badge::before,
-.couple-badge::after {
-  content: "";
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.couple-badge::before {
-  inset: -8px;
-  border: 1px dashed rgb(184 157 217 / 55%);
-  animation: badgeSpinSlow 28s linear infinite;
-}
-
-.couple-badge::after {
-  inset: -16px;
-  background:
-    radial-gradient(circle at 50% 0%, rgb(184 157 217 / 90%) 0 6%, transparent 7%),
-    radial-gradient(circle at 100% 50%, rgb(184 157 217 / 90%) 0 6%, transparent 7%),
-    radial-gradient(circle at 50% 100%, rgb(184 157 217 / 90%) 0 6%, transparent 7%),
-    radial-gradient(circle at 0% 50%, rgb(184 157 217 / 90%) 0 6%, transparent 7%),
-    radial-gradient(circle at 17% 17%, rgb(107 74 143 / 70%) 0 5%, transparent 6%),
-    radial-gradient(circle at 83% 17%, rgb(107 74 143 / 70%) 0 5%, transparent 6%),
-    radial-gradient(circle at 83% 83%, rgb(107 74 143 / 70%) 0 5%, transparent 6%),
-    radial-gradient(circle at 17% 83%, rgb(107 74 143 / 70%) 0 5%, transparent 6%);
-  opacity: 0.75;
-  animation: badgeSpinReverse 22s linear infinite;
+@keyframes eyebrowReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+    letter-spacing: 0.4em;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    letter-spacing: 0.3em;
+  }
 }
 
 /* --- Couple names (handwritten script — Great Vibes) --- */
@@ -874,234 +900,6 @@ footer p {
   color: var(--on-surface);
 }
 
-/* --- Story modal --- */
-.story-modal {
-  position: fixed;
-  inset: 0;
-  background: rgb(27 28 28 / 60%);
-  backdrop-filter: blur(6px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  box-sizing: border-box;
-  z-index: 12;
-  animation: fadeIn 260ms ease;
-}
-
-.story-modal-content {
-  width: min(720px, 92vw);
-  background: var(--surface-container-lowest);
-  border: 1px solid var(--outline-variant);
-  border-radius: var(--radius-md);
-  box-shadow: 0 30px 80px rgb(27 28 28 / 30%);
-  max-height: min(86vh, 720px);
-  padding: 2rem 1.5rem 1.75rem;
-  position: relative;
-  margin-inline: auto;
-  animation: popIn 320ms cubic-bezier(0.2, 0.72, 0.2, 1);
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-.story-modal-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-.story-modal-content::-webkit-scrollbar-thumb {
-  background: rgb(184 157 217 / 55%);
-  border-radius: 3px;
-}
-
-/* Photo-only modal: drop the heading/caption padding allowance so the image gets
-   the full vertical space, and recentre the close button. */
-.story-modal-content--photo-only {
-  padding: 2.75rem 1.25rem 1.25rem;
-  justify-content: center;
-}
-
-.story-close {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  z-index: 20;
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--outline-variant);
-  border-radius: 50%;
-  background: var(--surface-container-lowest);
-  color: var(--on-surface);
-  font-size: 1.4rem;
-  line-height: 1;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 180ms ease, color 180ms ease;
-}
-
-.story-close:hover {
-  background: var(--primary);
-  color: var(--on-primary);
-  border-color: var(--primary);
-}
-
-.story-header {
-  text-align: center;
-  margin-bottom: 1.25rem;
-}
-
-.story-header h3 {
-  margin: 0;
-  color: var(--primary);
-  font-family: var(--font-display);
-  font-size: 1.85rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  animation: softGlowIn 620ms ease both;
-}
-
-.story-header p {
-  margin: 0.5rem 0 0;
-  color: var(--on-surface-variant);
-  font-family: var(--font-body);
-  font-size: 0.95rem;
-  letter-spacing: 0.04em;
-  animation: softFadeIn 720ms ease both;
-}
-
-.story-book {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.65rem;
-}
-
-.story-viewport {
-  overflow: hidden;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--outline-variant);
-  background: var(--surface-container-low);
-}
-
-.story-track {
-  display: flex;
-  transition: transform 430ms cubic-bezier(0.2, 0.72, 0.2, 1);
-}
-
-.story-slide {
-  min-width: 100%;
-  padding: 1rem;
-  opacity: 0.25;
-  filter: saturate(0.9) brightness(0.92);
-  transform: scale(0.985);
-  transition:
-    opacity 420ms ease,
-    filter 420ms ease,
-    transform 420ms ease;
-}
-
-.story-slide.active {
-  opacity: 1;
-  filter: saturate(1) brightness(1);
-  transform: scale(1);
-}
-
-.story-photo-wrap {
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 1px solid var(--outline-variant);
-}
-
-.story-photo {
-  width: 100%;
-  height: clamp(180px, 32vh, 300px);
-  object-fit: cover;
-  display: block;
-  transform: scale(1.045);
-  filter: brightness(0.96);
-  transition: transform 720ms ease, filter 720ms ease;
-}
-
-.story-slide.active .story-photo {
-  transform: scale(1);
-  filter: brightness(1);
-}
-
-.story-caption {
-  text-align: center;
-  margin-top: 1rem;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 400ms ease, transform 400ms ease;
-}
-
-.story-slide.active .story-caption {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.story-caption h4 {
-  margin: 0;
-  color: var(--primary);
-  font-family: var(--font-display);
-  font-size: 1.3rem;
-  font-weight: 600;
-}
-
-.story-caption p {
-  margin: 0.4rem 0 0;
-  color: var(--on-surface-variant);
-  font-family: var(--font-body);
-  font-size: 0.95rem;
-  line-height: 1.6;
-}
-
-.story-nav {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  border: 1px solid var(--outline-variant);
-  background: var(--surface-container-lowest);
-  color: var(--primary);
-  font-size: 1.4rem;
-  cursor: pointer;
-  transition: transform 180ms ease, background-color 180ms ease, color 180ms ease;
-}
-
-.story-nav:hover {
-  transform: scale(1.06);
-  background: var(--primary);
-  color: var(--on-primary);
-  border-color: var(--primary);
-}
-
-.story-dots {
-  margin-top: 0.8rem;
-  display: flex;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.story-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  border: 1px solid var(--outline-variant);
-  background: transparent;
-  cursor: pointer;
-  transition: transform 180ms ease, background-color 180ms ease, border-color 180ms ease;
-  padding: 0;
-}
-
-.story-dot.active {
-  background: var(--primary-container);
-  border-color: var(--primary-container);
-  transform: scale(1.2);
-}
-
 /* --- Section-scoped backgrounds (transparent so the floral frame peeks through page edges) --- */
 #details,
 #calendar,
@@ -1117,79 +915,6 @@ footer p {
   justify-content: center;
   gap: 0.85rem 1.25rem;
   margin: 1.5rem auto 0;
-}
-
-/* --- Scroll cue: "View More" pill with a gently bouncing chevron --- */
-.hero-scroll-cue {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.7rem 1.4rem 0.7rem 1.5rem;
-  border-radius: 999px;
-  border: 1px solid rgb(184 157 217 / 60%);
-  background: rgb(255 255 255 / 70%);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  color: var(--primary);
-  font-family: var(--font-body);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background-color 280ms ease, color 280ms ease, transform 180ms ease,
-    box-shadow 280ms ease;
-  opacity: 0;
-  animation: heroScrollCueFadeIn 700ms cubic-bezier(0.22, 1, 0.32, 1)
-    var(--post-subtitle-delay, 0ms) forwards;
-}
-
-.hero-scroll-cue:hover,
-.hero-scroll-cue:focus-visible {
-  background: var(--primary);
-  color: var(--on-primary);
-  border-color: var(--primary);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 22px rgb(107 74 143 / 22%);
-  outline: none;
-}
-
-.hero-scroll-arrow {
-  font-size: 1.15rem !important;
-  line-height: 1;
-  animation: heroScrollArrowBob 1.6s ease-in-out infinite;
-}
-
-.hero-scroll-cue:hover .hero-scroll-arrow,
-.hero-scroll-cue:focus-visible .hero-scroll-arrow {
-  animation-play-state: paused;
-}
-
-@keyframes heroScrollCueFadeIn {
-  0% {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes heroScrollArrowBob {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(3px);
-  }
-}
-
-.hero-actions .story-link,
-.hero-actions .btn {
-  margin: 0;
 }
 
 /* --- Sequenced reveal animation delays after subtitle --- */
@@ -1244,11 +969,6 @@ footer.section {
     padding: 1.5rem 1.25rem;
   }
 
-  .couple-badge {
-    width: 84px;
-    height: 84px;
-    font-size: 1.5rem;
-  }
 
   .couple-names {
     font-size: clamp(3.4rem, 16vw, 4.6rem);
@@ -1569,27 +1289,27 @@ footer.section {
 
 @keyframes nameGlowIn {
   0% {
-    text-shadow: 0 0 0 rgb(184 157 217 / 0%);
+    text-shadow: 0 0 0 rgb(214 186 130 / 0%);
     filter: brightness(1);
   }
   35% {
     text-shadow:
       0 0 18px rgb(255 255 255 / 70%),
-      0 0 38px rgb(184 157 217 / 80%),
-      0 0 80px rgb(184 157 217 / 55%);
+      0 0 38px rgb(214 186 130 / 80%),
+      0 0 80px rgb(214 186 130 / 55%);
     filter: brightness(1.18);
   }
   65% {
     text-shadow:
       0 0 14px rgb(255 255 255 / 50%),
-      0 0 34px rgb(184 157 217 / 70%),
-      0 0 70px rgb(184 157 217 / 45%);
+      0 0 34px rgb(214 186 130 / 70%),
+      0 0 70px rgb(214 186 130 / 45%);
     filter: brightness(1.12);
   }
   100% {
     text-shadow:
-      0 1px 8px rgb(107 74 143 / 8%),
-      0 0 6px rgb(184 157 217 / 12%);
+      0 1px 8px rgb(150 115 60 / 8%),
+      0 0 6px rgb(214 186 130 / 12%);
     filter: brightness(1);
   }
 }
@@ -1598,17 +1318,17 @@ footer.section {
   0%,
   100% {
     text-shadow:
-      0 1px 8px rgb(107 74 143 / 8%),
-      0 0 6px rgb(184 157 217 / 12%);
+      0 1px 8px rgb(150 115 60 / 8%),
+      0 0 6px rgb(214 186 130 / 12%);
     filter: brightness(1);
   }
   50% {
     text-shadow:
-      0 2px 16px rgb(107 74 143 / 18%),
+      0 2px 16px rgb(150 115 60 / 18%),
       0 0 24px rgb(255 255 255 / 55%),
-      0 0 44px rgb(184 157 217 / 80%),
-      0 0 78px rgb(184 157 217 / 50%),
-      0 0 120px rgb(184 157 217 / 25%);
+      0 0 44px rgb(214 186 130 / 80%),
+      0 0 78px rgb(214 186 130 / 50%),
+      0 0 120px rgb(214 186 130 / 25%);
     filter: brightness(1.12);
   }
 }
@@ -1637,6 +1357,31 @@ footer.section {
   }
 }
 
+/* Page-load entrance: the monogram appears near the centre of the viewport,
+   slightly oversized and faded, then glides up and shrinks into its natural
+   hero position. The translateY value approximates the gap between the
+   badge's in-hero spot and the viewport centre; works well across phones,
+   tablets, and desktops without per-device measurement. */
+@keyframes badgeEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(34vh) scale(1.85);
+    filter: blur(6px);
+  }
+  35% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  70% {
+    transform: translateY(4px) scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
 @keyframes subtitleReveal {
   0% {
     opacity: 0;
@@ -1657,7 +1402,890 @@ footer.section {
   }
 }
 
+/* ==========================================================================
+   Invitation-card theme: gold foil monogram + script, Cinzel capitals in ink,
+   calla-lily monogram, purple florals (matches the printed invitation)
+   ========================================================================== */
+
+/* --- Monogram: "S | L" with a calla-lily stem between the initials --- */
+.monogram {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.04em;
+  font-family: var(--font-monogram);
+  font-weight: 400;
+  line-height: 1;
+}
+
+.monogram-letter {
+  display: inline-block;
+  background: var(--gold-foil);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Line + lily bunch cut from the card; on the card the line stands about
+   1.6x the capital height, centred on the letters. */
+.monogram-stem {
+  display: block;
+  height: 1.15em;
+  width: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* --- Cover screen (what a guest sees when they open the shared link) --- */
+.invite-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  overflow-y: auto;
+  transition: opacity 900ms ease, visibility 900ms ease;
+}
+
+.invite-cover--leaving {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.invite-cover-inner {
+  position: relative;
+  z-index: 1;
+  min-height: 100dvh;
+  padding: 2rem var(--margin-mobile);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(2rem, 6vh, 3.5rem);
+  opacity: 0;
+  transition: opacity 700ms ease, transform 900ms ease;
+}
+
+.invite-cover--ready .invite-cover-inner {
+  opacity: 1;
+}
+
+.invite-cover--leaving .invite-cover-inner {
+  transform: scale(1.06);
+}
+
+.cover-logo {
+  font-size: clamp(5rem, 30vw, 9rem);
+  filter: drop-shadow(0 2px 14px rgb(176 138 76 / 22%));
+}
+
+.cover-btn {
+  margin-top: 0.75rem;
+  outline: 1px solid var(--gold-soft);
+  outline-offset: 5px;
+  animation: coverButtonGlow 2.8s ease-in-out infinite;
+}
+
+@keyframes coverButtonGlow {
+  0%,
+  100% {
+    box-shadow: var(--shadow-button);
+  }
+  50% {
+    box-shadow: 0 6px 28px rgb(107 74 143 / 35%), 0 0 0 6px rgb(216 189 133 / 18%);
+  }
+}
+
+/* --- Hero --- */
+.hero {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: clamp(2rem, 6vw, 4rem) var(--margin-mobile);
+}
+
+.hero .card {
+  max-width: 720px;
+  padding: 0 clamp(0.5rem, 3vw, 2rem);
+  animation: none;
+  outline: none;
+}
+
+.hero-logo {
+  font-size: clamp(3.5rem, 18vw, 6rem);
+  margin-bottom: clamp(1.25rem, 4vw, 2rem);
+  filter: drop-shadow(0 2px 10px rgb(176 138 76 / 18%));
+  animation: fadeUp 900ms cubic-bezier(0.22, 1, 0.32, 1) both;
+}
+
+.eyebrow {
+  font-family: var(--font-caps);
+  color: var(--ink);
+  font-size: 0.8rem;
+  letter-spacing: 0.22em;
+}
+
+.couple-names {
+  margin-top: 0.5rem;
+  color: var(--gold);
+}
+
+.ampersand {
+  color: var(--gold-light);
+}
+
+.subtitle {
+  font-family: var(--font-caps);
+  font-size: clamp(0.72rem, 1.8vw, 0.85rem);
+  text-transform: uppercase;
+  line-height: 2;
+  color: var(--ink);
+  margin-bottom: 1.75rem;
+}
+
+.hero-date {
+  margin: 0 auto 2rem;
+  opacity: 0;
+  animation: fadeUp 1.2s cubic-bezier(0.22, 1, 0.32, 1) both;
+}
+
+.hero-date p {
+  margin: 0;
+  font-family: var(--font-caps);
+  color: var(--ink);
+}
+
+.hero-date .hero-date-day {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 0.4rem;
+}
+
+.hero-date .hero-date-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.hero-date-side {
+  padding: 0.35rem 0;
+  border-block: 1px solid var(--ink);
+  font-size: clamp(0.8rem, 2.4vw, 0.95rem);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.hero-date-num {
+  font-size: clamp(2.2rem, 7vw, 2.8rem);
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* --- Card typography: Cinzel capitals, Cormorant body, gold accents --- */
+.label-caps,
+.story-link,
+.btn,
+label,
+.calendar-days span,
+.guest-pick-count,
+.guest-selected-label,
+.attendance-btn,
+.hero-scroll-cue,
+.section-next {
+  font-family: var(--font-caps);
+  letter-spacing: 0.14em;
+}
+
+.card {
+  border-color: var(--gold-soft);
+  outline: 1px solid rgb(176 138 76 / 18%);
+  outline-offset: -10px;
+}
+
+h2 {
+  font-family: var(--font-caps);
+  font-weight: 500;
+  font-size: clamp(1.4rem, 3.6vw, 2rem);
+  letter-spacing: 0.08em;
+  color: var(--ink);
+}
+
+.card h2::after {
+  content: "";
+  display: block;
+  width: 110px;
+  height: 9px;
+  margin: 0.9rem auto 0;
+  background:
+    radial-gradient(circle, var(--gold) 0 2.5px, transparent 3px) center / 9px 9px no-repeat,
+    linear-gradient(var(--gold-soft), var(--gold-soft)) center / 100% 1px no-repeat;
+}
+
+.section-eyebrow {
+  font-family: var(--font-script);
+  font-size: clamp(1.8rem, 5vw, 2.3rem);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--gold);
+  margin-bottom: 0.25rem;
+}
+
+.heading-icon {
+  color: var(--gold);
+}
+
+.detail-item {
+  background: rgb(255 255 255 / 72%);
+  border-color: var(--gold-soft);
+}
+
+.detail-item:hover {
+  border-color: var(--gold);
+}
+
+.detail-item h3 {
+  font-size: 1.45rem;
+}
+
+.detail-item p,
+.guest-search-status,
+.rsvp-config-hint {
+  font-size: 1.12rem;
+}
+
+.time-line strong {
+  color: #8a6a35;
+}
+
+.field-hint {
+  font-size: 0.98rem;
+}
+
+input {
+  font-size: 1.2rem;
+}
+
+.date-cell {
+  font-family: var(--font-caps);
+}
+
+.date-cell.marked {
+  color: var(--gold);
+}
+
+.date-cell.marked::before {
+  border-color: var(--gold);
+}
+
+.story-link {
+  border-color: var(--gold);
+  color: var(--ink);
+}
+
+.story-link:hover {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #ffffff;
+}
+
+.dot {
+  background: radial-gradient(circle, rgb(216 189 133 / 45%), rgb(216 189 133 / 0%));
+}
+
+footer {
+  background: rgb(255 255 255 / 82%);
+  border-top-color: var(--gold-soft);
+}
+
+footer p {
+  font-family: var(--font-script);
+  font-style: normal;
+  font-size: 2rem;
+  color: var(--gold);
+}
+
+@media (max-width: 480px) {
+  .date-cell.marked {
+    background: var(--gold);
+    color: #ffffff;
+  }
+
+  .invite-cover .cover-btn {
+    width: auto;
+  }
+
+  /* Keep "Sapuni & Lahiru" on one line, as on the printed card. */
+  .couple-names {
+    font-size: clamp(2.5rem, 12vw, 3.6rem);
+  }
+
+  .couple-names .name-word {
+    display: inline-block;
+    width: auto;
+    white-space: nowrap;
+  }
+
+  .couple-names .ampersand {
+    display: inline-block;
+    width: auto;
+    padding: 0 0.1em;
+    font-size: 0.92em;
+  }
+}
+
+/* The admin dashboard keeps its plain sans-serif look. */
+.admin-page {
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-body: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-caps: var(--font-body);
+}
+
+.admin-page h2 {
+  color: var(--primary);
+  letter-spacing: 0;
+}
+
+.admin-page .card h2::after,
+.admin-card h2::after {
+  content: none;
+}
+
+/* --- Section stage: one section at a time, fitted between the florals --- */
+.stage {
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  top: var(--stage-top);
+  bottom: var(--stage-bottom);
+}
+
+.stage .stage-section {
+  position: absolute;
+  inset: 0 0 var(--stage-nav-h);
+  z-index: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem var(--stage-gutter);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(12px);
+  transition: opacity 450ms ease, transform 450ms ease, visibility 0s linear 450ms;
+}
+
+.stage .stage-section.is-active {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 450ms ease, transform 450ms ease;
+}
+
+/* Centre each section vertically when it fits; top-align (and scroll inside
+   the stage) when a small screen can't fit it. */
+.stage-section > .card {
+  max-width: 720px;
+  margin: auto;
+  animation: none;
+}
+
+.stage-nav {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--stage-nav-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0 var(--stage-gutter);
+  opacity: 0;
+  animation: stageNavIn 700ms cubic-bezier(0.22, 1, 0.32, 1) var(--post-subtitle-delay, 0ms) forwards;
+}
+
+@keyframes stageNavIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.stage-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  padding: 0.55rem 1.15rem;
+  border-radius: 999px;
+  border: 1px solid var(--gold);
+  background: rgb(255 255 255 / 88%);
+  color: var(--ink);
+  font-family: var(--font-caps);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 240ms ease, color 240ms ease, border-color 240ms ease, transform 180ms ease;
+}
+
+.stage-nav-btn:hover,
+.stage-nav-btn:focus-visible {
+  background: var(--gold);
+  color: #ffffff;
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.stage-nav-btn--next {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+  box-shadow: var(--shadow-button);
+}
+
+.stage-nav-btn--next:hover,
+.stage-nav-btn--next:focus-visible {
+  background: var(--on-primary-container);
+  border-color: var(--on-primary-container);
+}
+
+.stage-nav-arrow {
+  font-size: 1.35em;
+  line-height: 1;
+  margin-top: -0.1em;
+}
+
+.stage .hero {
+  display: flex;
+  min-height: 0;
+}
+
+.closing {
+  margin: 0.75rem 0 0;
+  font-family: var(--font-script);
+  font-size: 1.7rem;
+  color: var(--gold);
+}
+
+/* Compact sections so each fits the space between the florals on phones. */
+@media (max-width: 999px) {
+  .stage .card {
+    padding: 1.1rem 1rem;
+  }
+
+  .stage .hero .card {
+    padding: 0;
+  }
+
+  .stage .hero-logo {
+    font-size: clamp(3rem, 15vw, 5rem);
+    margin-bottom: 0.75rem;
+  }
+
+  .stage .eyebrow {
+    margin-bottom: 0.75rem;
+  }
+
+  .stage .subtitle {
+    margin-bottom: 1rem;
+  }
+
+  .stage .hero-date {
+    margin-bottom: 0;
+  }
+
+  .stage h2 {
+    margin-bottom: 1rem;
+    font-size: 1.35rem;
+  }
+
+  .stage .card h2::after {
+    margin-top: 0.6rem;
+  }
+
+  .stage .section-eyebrow {
+    font-size: 1.6rem;
+  }
+
+  .stage .detail-grid {
+    gap: 0.75rem;
+  }
+
+  .stage .detail-item {
+    padding: 0.85rem 1.1rem;
+    gap: 0.2rem;
+  }
+
+  .stage .detail-item h3 {
+    font-size: 1.25rem;
+  }
+
+  .stage .detail-item p {
+    font-size: 1.02rem;
+  }
+
+  .stage .map-btn {
+    margin-top: 0.5rem;
+    padding: 0.5rem 1.1rem;
+  }
+
+  .stage .calendar {
+    margin-top: 0.75rem;
+  }
+
+  .stage form {
+    margin-top: 0.75rem;
+    gap: 0.6rem;
+  }
+
+  .stage-nav-btn {
+    padding: 0.5rem 0.9rem;
+    font-size: 0.64rem;
+    letter-spacing: 0.1em;
+  }
+}
+
+/* --- Stage layout: shared logo, fitted sections, compact navigation --- */
+:host {
+  --stage-logo-h: clamp(56px, 10vh, 92px);
+  --stage-nav-h: 2.25rem;
+  --stage-inner-top: 0.75rem;
+}
+
+/* Wide / landscape screens keep the nav clear of the page edge. */
+@media (min-width: 1000px), (min-aspect-ratio: 1/1) {
+  :host {
+    --stage-bottom: 3.25rem;
+  }
+}
+
+.stage {
+  transition: top 450ms ease;
+  /* Section content uses the card's capitals serif. */
+  --font-body: "Cinzel", Georgia, serif;
+  --font-display: "Cinzel", Georgia, serif;
+  font-family: var(--font-body);
+}
+
+/* Only the landing cover and the names section show the top florals; the
+   other sections use the freed space. */
+.stage.stage--inner {
+  top: var(--stage-inner-top);
+}
+
+.floral--tl,
+.floral--tr {
+  transition: opacity 500ms ease;
+}
+
+.floral-frame--no-top .floral--tl,
+.floral-frame--no-top .floral--tr {
+  opacity: 0;
+}
+
+.stage-logo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--stage-logo-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--stage-logo-h) * 0.78);
+  filter: drop-shadow(0 2px 10px rgb(176 138 76 / 18%));
+  animation: fadeUp 900ms cubic-bezier(0.22, 1, 0.32, 1) both;
+}
+
+.stage .stage-section {
+  inset: var(--stage-logo-h) 0 0;
+  padding: 0.25rem var(--stage-gutter) 0.5rem;
+  scrollbar-width: none;
+}
+
+.stage .stage-section::-webkit-scrollbar {
+  display: none;
+}
+
+/* Small buttons, set just below the content, over the top of the florals. */
+.stage-nav {
+  bottom: calc(-1 * var(--stage-nav-h) - 0.35rem);
+  height: var(--stage-nav-h);
+  gap: 0.6rem;
+}
+
+.stage-nav-btn {
+  min-height: 30px;
+  gap: 0.3rem;
+  padding: 0.3rem 0.85rem;
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+}
+
+.stage-nav-arrow {
+  font-size: 1.25em;
+}
+
+/* Section headings */
+.stage .stage-section > .card {
+  max-width: min(600px, 100%);
+  width: 100%;
+  padding: clamp(0.75rem, 2.2vh, 1.5rem) clamp(0.9rem, 3vw, 1.75rem);
+  outline-offset: -7px;
+}
+
+.stage .section-eyebrow {
+  font-size: clamp(1.4rem, 4vh, 2.4rem);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.stage h2 {
+  font-size: clamp(1.05rem, 3.2vh, 1.9rem);
+  letter-spacing: 0.1em;
+  margin: 0 0 clamp(0.6rem, 1.8vh, 1.25rem);
+}
+
+.stage .card h2::after {
+  margin-top: clamp(0.35rem, 1vh, 0.7rem);
+}
+
+.stage .section-intro {
+  font-size: clamp(0.74rem, 1.9vh, 1rem);
+  margin: 0;
+}
+
+/* Names section */
+.stage .eyebrow {
+  font-size: clamp(0.62rem, 1.6vh, 0.8rem);
+  margin-bottom: clamp(0.4rem, 1.2vh, 1rem);
+}
+
+.stage .couple-names {
+  margin: 0 0 clamp(0.3rem, 1vh, 0.75rem);
+}
+
+.stage .subtitle {
+  font-size: clamp(0.62rem, 1.6vh, 0.8rem);
+  margin-bottom: clamp(0.75rem, 2.4vh, 1.75rem);
+}
+
+.stage .hero-date-day {
+  font-size: clamp(0.75rem, 1.9vh, 1rem);
+}
+
+.stage .hero-date-side {
+  font-size: clamp(0.66rem, 1.7vh, 0.9rem);
+}
+
+.stage .hero-date-num {
+  font-size: clamp(1.8rem, 5vh, 2.6rem);
+}
+
+/* Details / venues: compact rows */
+.info-list {
+  display: grid;
+  gap: clamp(0.45rem, 1.3vh, 0.8rem);
+  max-width: 500px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  padding: clamp(0.55rem, 1.8vh, 1.1rem) 1rem;
+  border: 1px solid var(--gold-soft);
+  border-radius: var(--radius-md);
+  background: rgb(255 255 255 / 72%);
+}
+
+.info-icon {
+  flex: none;
+  margin-top: 0.1rem;
+  font-size: clamp(1.2rem, 2.8vh, 1.6rem);
+  color: var(--gold);
+}
+
+.info-label {
+  margin: 0;
+  font-family: var(--font-caps);
+  font-size: clamp(0.6rem, 1.5vh, 0.78rem);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #8a6a35;
+}
+
+.info-value {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-caps);
+  font-size: clamp(0.78rem, 2.2vh, 1.15rem);
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.map-link {
+  display: inline-block;
+  margin-top: 0.35rem;
+  font-family: var(--font-caps);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--primary);
+  text-decoration: none;
+  border-bottom: 1px solid currentColor;
+}
+
+.map-link:hover {
+  color: var(--gold);
+}
+
+/* Calendar sized by the available height */
+.stage .calendar {
+  max-width: min(400px, 44vh);
+  margin: 0 auto;
+  padding: clamp(0.5rem, 1.5vh, 1rem);
+}
+
+.stage .calendar-grid {
+  gap: 0.15rem;
+}
+
+.stage .calendar-days {
+  margin-bottom: 0.2rem;
+}
+
+.stage .calendar-days span {
+  font-size: clamp(0.5rem, 1.3vh, 0.62rem);
+  letter-spacing: 0.06em;
+  padding: 0.2rem 0;
+}
+
+.stage .date-cell {
+  font-size: clamp(0.62rem, 1.6vh, 0.85rem);
+}
+
+/* RSVP */
+.stage form {
+  margin-top: clamp(0.4rem, 1.2vh, 0.9rem);
+  gap: clamp(0.35rem, 1vh, 0.7rem);
+}
+
+.stage label {
+  font-size: 0.62rem;
+  margin-bottom: 0.1rem;
+}
+
+.stage .field-hint {
+  font-size: 0.64rem;
+  font-style: normal;
+  line-height: 1.5;
+}
+
+.stage input {
+  font-size: 0.9rem;
+  padding: 0.55rem 0;
+}
+
+.stage input::placeholder {
+  font-style: normal;
+}
+
+.stage input[type="number"] {
+  font-size: 1.2rem;
+}
+
+.stage .guest-search-results {
+  max-height: 22vh;
+}
+
+.stage .guest-pick {
+  padding: 0.6rem 0.85rem;
+}
+
+.stage .guest-pick-name {
+  font-size: 0.85rem;
+}
+
+.stage .guest-pick-count {
+  font-size: 0.6rem;
+}
+
+.stage .guest-selected {
+  margin-top: 0;
+  padding: 0.6rem 0.9rem;
+}
+
+.stage .guest-selected-readonly {
+  font-size: 0.95rem;
+}
+
+.stage .guest-selected-meta {
+  margin-top: 0.2rem;
+  font-size: 0.68rem;
+}
+
+.stage .attendance-options {
+  margin: 0;
+  gap: 0.6rem;
+}
+
+.stage .attendance-btn {
+  min-height: 40px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.7rem;
+}
+
+.stage form button.btn {
+  margin-top: 0.4rem;
+  padding: 0.7rem 1.6rem;
+  font-size: 0.68rem;
+}
+
+.stage #formStatus {
+  min-height: 1rem;
+  margin: 0.4rem 0 0;
+  font-size: 0.72rem;
+}
+
+.stage .closing {
+  font-size: clamp(1.15rem, 3vh, 1.6rem);
+  margin-top: 0.25rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .stage,
+  .stage-logo,
+  .floral--tl,
+  .floral--tr {
+    animation: none;
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-section,
+  .stage-nav,
   .floral-frame,
   .dot,
   .card,
@@ -1674,13 +2302,17 @@ footer.section {
   .couple-names,
   .couple-names .name-letter,
   .subtitle,
-  .couple-badge,
-  .couple-badge::before,
-  .couple-badge::after,
+  .hero-date,
   .hero .story-link,
   .hero .card .btn,
   .hero-scroll-cue,
   .hero-scroll-arrow,
+  .section-next,
+  .section-next-arrow,
+  .eyebrow,
+  .invite-cover,
+  .invite-cover-inner,
+  .hero-logo,
   footer.section {
     animation: none;
     transition: none;
@@ -1691,6 +2323,9 @@ footer.section {
   .hero .story-link,
   .hero .card .btn,
   .hero-scroll-cue,
+  .hero-date,
+  .eyebrow,
+  .stage-nav,
   footer.section {
     opacity: 1;
     transform: none;

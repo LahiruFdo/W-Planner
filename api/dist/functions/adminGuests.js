@@ -34,11 +34,16 @@ async function listGuests() {
         })) {
             const rowKey = String(entity.rowKey);
             const e = entity;
+            const explicitType = String(e.invitationType ?? '').trim();
+            const legacyType = String(e.guestType ?? '').trim();
+            const invitationType = explicitType || legacyType || 'single';
             guests.push({
                 id: rowKey,
                 title: String(e.title ?? ''),
-                guestType: String(e.guestType ?? ''),
+                invitationType,
+                guestType: invitationType,
                 name: String(e.name ?? ''),
+                searchKeywords: String(e.searchKeywords ?? ''),
                 invitedCount: Number(e.invitedCount ?? 1),
                 confirmed: String(e.confirmed ?? '0'),
                 isComing: String(e.isComing ?? ''),
@@ -58,6 +63,8 @@ async function listGuests() {
     }
     return (0, cors_1.withCors)({ status: 200, jsonBody: { guests } });
 }
+const ALLOWED_TITLES = ['Mr.', 'Mrs.', 'Ms.', 'Rev. Fr.', 'Rev. Sr.'];
+const ALLOWED_INVITATION_TYPES = ['single', 'couple', 'family'];
 async function upsertGuest(request) {
     const cs = (0, storage_1.requireConnectionString)();
     if (!cs) {
@@ -75,9 +82,18 @@ async function upsertGuest(request) {
     catch {
         return (0, cors_1.withCors)({ status: 400, jsonBody: { ok: false, error: 'Invalid JSON body.' } });
     }
-    const title = (body.title ?? '').trim();
-    const guestType = (body.guestType ?? '').trim();
+    const titleRaw = (body.title ?? '').trim();
+    // Accept any title string but prefer the canonical capitalization when it
+    // matches one of the well-known options. Legacy/free-form titles are passed
+    // through unchanged rather than rejected.
+    const canonicalTitle = ALLOWED_TITLES.find((t) => t.toLowerCase() === titleRaw.toLowerCase());
+    const title = canonicalTitle ?? titleRaw;
+    const invitationTypeRaw = (body.invitationType ?? body.guestType ?? '').trim().toLowerCase();
+    const invitationType = ALLOWED_INVITATION_TYPES.includes(invitationTypeRaw)
+        ? invitationTypeRaw
+        : 'single';
     const name = (body.name ?? '').trim();
+    const searchKeywords = (body.searchKeywords ?? '').trim();
     const invitedRaw = body.invitedCount;
     const invited = typeof invitedRaw === 'number' ? invitedRaw : Number(invitedRaw);
     if (!name) {
@@ -109,8 +125,10 @@ async function upsertGuest(request) {
         partitionKey: storage_1.GUEST_PARTITION_KEY,
         rowKey,
         title,
-        guestType,
+        invitationType,
+        guestType: invitationType, // keep legacy column populated for older readers
         name,
+        searchKeywords,
         invitedCount: String(Math.floor(invited)),
         confirmed,
         isComing,
@@ -123,6 +141,33 @@ async function upsertGuest(request) {
         return (0, cors_1.withCors)({ status: 500, jsonBody: { ok: false, error: 'Could not save guest.' } });
     }
     return (0, cors_1.withCors)({ status: 200, jsonBody: { ok: true, id: rowKey } });
+}
+async function deleteGuest(request) {
+    const cs = (0, storage_1.requireConnectionString)();
+    if (!cs) {
+        return (0, cors_1.withCors)({ status: 503, jsonBody: { ok: false, error: 'Storage is not configured.' } });
+    }
+    const table = (0, storage_1.getTableClient)();
+    if (!table) {
+        return (0, cors_1.withCors)({ status: 503, jsonBody: { ok: false, error: 'Table client unavailable.' } });
+    }
+    await ensureTable(table);
+    // Accept the id from either the route parameter or a `?id=` query string.
+    const id = (request.params?.id ?? request.query.get('id') ?? '').trim();
+    if (!id) {
+        return (0, cors_1.withCors)({ status: 400, jsonBody: { ok: false, error: 'id is required.' } });
+    }
+    try {
+        await table.deleteEntity(storage_1.GUEST_PARTITION_KEY, id);
+    }
+    catch (e) {
+        const statusCode = e?.statusCode;
+        if (statusCode === 404) {
+            return (0, cors_1.withCors)({ status: 404, jsonBody: { ok: false, error: 'Guest not found.' } });
+        }
+        return (0, cors_1.withCors)({ status: 500, jsonBody: { ok: false, error: 'Could not delete guest.' } });
+    }
+    return (0, cors_1.withCors)({ status: 200, jsonBody: { ok: true, id } });
 }
 async function adminGuestsHandler(request, _context) {
     if (request.method === 'OPTIONS') {
@@ -138,11 +183,20 @@ async function adminGuestsHandler(request, _context) {
     if (request.method === 'PUT') {
         return upsertGuest(request);
     }
+    if (request.method === 'DELETE') {
+        return deleteGuest(request);
+    }
     return (0, cors_1.withCors)({ status: 405, jsonBody: { error: 'Method not allowed.' } });
 }
 functions_1.app.http('adminGuests', {
-    methods: ['GET', 'PUT', 'OPTIONS'],
+    methods: ['GET', 'PUT', 'DELETE', 'OPTIONS'],
     authLevel: 'anonymous',
     route: 'manage/guests',
+    handler: adminGuestsHandler
+});
+functions_1.app.http('adminGuestById', {
+    methods: ['DELETE', 'OPTIONS'],
+    authLevel: 'anonymous',
+    route: 'manage/guests/{id}',
     handler: adminGuestsHandler
 });

@@ -35,6 +35,7 @@ async function adminUploadImageSasHandler(request, _context) {
         return (0, cors_1.withCors)({ status: 503, jsonBody: { error: 'Blob client unavailable.' } });
     }
     await (0, storage_1.ensureContainersExist)(blobClient);
+    await (0, storage_1.ensureBlobCorsConfigured)(blobClient);
     const sas = (0, storage_1.generateUploadSasUrl)(cs, blobName, contentType);
     if (!sas) {
         return (0, cors_1.withCors)({ status: 500, jsonBody: { error: 'Could not generate SAS.' } });

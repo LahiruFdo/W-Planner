@@ -34,10 +34,20 @@ export function getBlobServiceClient(): BlobServiceClient | null {
   return BlobServiceClient.fromConnectionString(cs);
 }
 
+// Well-known shared key for the Azurite local emulator. Used only when the
+// connection string is the shorthand `UseDevelopmentStorage=true`, which has
+// no embedded AccountName/AccountKey but is still expected to work for SAS.
+const AZURITE_ACCOUNT_NAME = 'devstoreaccount1';
+const AZURITE_ACCOUNT_KEY =
+  'Eby8vdM02xNOcqFlqUwJPLlmEYmKZqWGiBO9Pn1k6+L5EpiSjbwo/5kk1sObrUgABEcjpDQXdmKZSpEDjVbS5GQ==';
+
 export function parseAccountFromConnectionString(connectionString: string): {
   accountName: string;
   accountKey: string;
 } | null {
+  if (/UseDevelopmentStorage\s*=\s*true/i.test(connectionString)) {
+    return { accountName: AZURITE_ACCOUNT_NAME, accountKey: AZURITE_ACCOUNT_KEY };
+  }
   const nameMatch = /AccountName=([^;]+)/i.exec(connectionString);
   const keyMatch = /AccountKey=([^;]+)/i.exec(connectionString);
   if (!nameMatch?.[1] || !keyMatch?.[1]) {
