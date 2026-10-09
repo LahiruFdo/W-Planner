@@ -316,7 +316,15 @@
         }
       </span>
     </h1>
-    <p class="subtitle" [style.animation-delay]="subtitleRevealDelay">Request the honour of your presence to celebrate their wedding</p>
+    @if (invitee) {
+      <p class="subtitle" [style.animation-delay]="subtitleRevealDelay">
+        Request the honour of the presence of
+        <span class="invitee-name">{{ formatGuestDisplay(invitee) }}</span>
+        to celebrate their wedding
+      </p>
+    } @else {
+      <p class="subtitle" [style.animation-delay]="subtitleRevealDelay">Request the honour of your presence to celebrate their wedding</p>
+    }
     <div class="hero-date" [style.animation-delay]="subtitleRevealDelay">
       <p class="hero-date-day">On {{ date | date: 'EEEE' }}</p>
       <p class="hero-date-row">
@@ -445,7 +453,13 @@
           }
           }
 
-          @if (selectedGuest) {
+          @if (selectedGuest && invitee) {
+            <label for="inviteeName">Invitation for</label>
+            <input id="inviteeName" name="inviteeName" type="text" readonly [value]="formatGuestDisplay(selectedGuest)" />
+
+            <label for="inviteeCount">No. of invitees</label>
+            <input id="inviteeCount" name="inviteeCount" type="number" readonly [value]="selectedGuest.invitedCount" />
+          } @else if (selectedGuest) {
             <div class="guest-selected" aria-live="polite">
               <div class="guest-selected-head">
                 <span class="guest-selected-label">Your invitation</span>
@@ -454,6 +468,9 @@
               <p class="guest-selected-readonly">{{ formatGuestDisplay(selectedGuest) }}</p>
               <p class="guest-selected-meta">{{ selectedGuest.invitedCount }} seat(s) on this invitation</p>
             </div>
+          }
+
+          @if (selectedGuest && !rsvpSubmitted) {
 
             <label>Will you attend?</label>
             <div class="attendance-options" role="group" aria-label="Will you attend?">
@@ -475,7 +492,7 @@
               </button>
             </div>
 
-            @if (attendance === 'yes') {
+            @if (attendance === 'yes' && selectedGuest.invitedCount > 1) {
               <label for="attendingCount">How many will attend?</label>
               <input
                 id="attendingCount"

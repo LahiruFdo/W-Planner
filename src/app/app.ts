@@ -25,6 +25,15 @@ export interface GuestSearchResult {
   invitedCount: number;
 }
 
+/** One entry in public/invitees.json. The invitation link carries the id: /?id=amal */
+export interface Invitee {
+  id: string;
+  title: string;
+  name: string;
+  inviteeType: InvitationType;
+  invitedCount: number;
+}
+
 export interface AdminGuest extends GuestSearchResult {
   confirmed?: string;
   isComing?: string;
@@ -116,6 +125,10 @@ export class App implements OnInit, OnDestroy {
   protected attendingCountError = '';
   protected submitting = false;
   protected statusMessage = '';
+  // Set when the link's ?id= matches an entry in invitees.json. The invitation
+  // is then personalised and the RSVP form is locked to this invitee.
+  protected invitee: GuestSearchResult | null = null;
+  protected rsvpSubmitted = false;
   private guestSearchTimer: ReturnType<typeof setTimeout> | null = null;
 
   /**
@@ -289,10 +302,44 @@ export class App implements OnInit, OnDestroy {
         : Promise.resolve();
     const maxWait = new Promise<void>((resolve) => setTimeout(resolve, 2500));
 
-    void Promise.race([fontReady, maxWait]).then(() => {
+    // The invitee lookup shares the same capped wait, so the guest's name is
+    // ready by the time they open the invitation.
+    void Promise.race([Promise.all([fontReady, this.loadInvitee()]), maxWait]).then(() => {
       this.isCoverReady = true;
       this.cdr.markForCheck();
     });
+  }
+
+  private async loadInvitee(): Promise<void> {
+    // Accept both /?id=amal and /amal as the invitation link.
+    const fromQuery = new URLSearchParams(window.location.search).get('id') ?? '';
+    const fromPath = decodeURIComponent(window.location.pathname.split('/').filter(Boolean)[0] ?? '');
+    const id = (fromQuery || fromPath).trim().toLowerCase();
+    if (!id) {
+      return;
+    }
+    try {
+      const list = await firstValueFrom(this.http.get<Invitee[]>('/invitees.json'));
+      const match = (list ?? []).find((i) => String(i.id ?? '').trim().toLowerCase() === id);
+      if (!match) {
+        return;
+      }
+      const invited = Math.floor(Number(match.invitedCount));
+      const type = String(match.inviteeType ?? '').trim().toLowerCase() || 'single';
+      this.invitee = {
+        id: String(match.id).trim(),
+        title: String(match.title ?? '').trim(),
+        invitationType: type,
+        guestType: type,
+        name: String(match.name ?? '').trim(),
+        searchKeywords: '',
+        invitedCount: Number.isFinite(invited) && invited >= 1 ? invited : 1
+      };
+      this.selectGuest(this.invitee);
+    } catch {
+      // No list or a bad id: fall back to the generic invitation and RSVP search.
+      this.invitee = null;
+    }
   }
 
   protected openInvitation(): void {
@@ -877,6 +924,8 @@ export class App implements OnInit, OnDestroy {
       const res = await firstValueFrom(
         this.http.post<{ ok?: boolean; error?: string }>(this.apiUrl('rsvp'), {
           guestId: this.selectedGuest.id,
+          guestName: this.formatGuestDisplay(this.selectedGuest),
+          invitedCount: invited,
           attendance: this.attendance,
           ...(this.attendance === 'yes' ? { attendingCount: finalCount } : {})
         })
@@ -886,9 +935,13 @@ export class App implements OnInit, OnDestroy {
         return;
       }
       this.statusMessage = 'Thank you! Your RSVP has been submitted.';
-      this.clearGuestSelection();
-      this.guestSearchQuery = '';
-      this.guestSearchResults = [];
+      if (this.invitee) {
+        this.rsvpSubmitted = true;
+      } else {
+        this.clearGuestSelection();
+        this.guestSearchQuery = '';
+        this.guestSearchResults = [];
+      }
     } catch {
       this.statusMessage = 'Could not submit RSVP now. Please try again.';
     } finally {
