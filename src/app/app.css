@@ -862,10 +862,13 @@ input[type="number"] {
   color: var(--primary);
 }
 
-.attendance-btn--active {
+/* :hover is listed too so it can't recolour the selected button's text
+   (phones keep the hover state after a tap). */
+.attendance-btn--active,
+.attendance-btn--active:hover {
   background: var(--primary);
   border-color: var(--primary);
-  color: var(--on-primary);
+  color: #ffffff;
 }
 
 #formStatus {

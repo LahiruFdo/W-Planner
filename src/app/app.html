@@ -426,7 +426,7 @@
         <form (ngSubmit)="submitRsvp()">
           @if (!selectedGuest) {
           <label for="guestSearch">Find your invitation</label>
-          <p class="field-hint">Type at least 2 letters of your name or a family member's name.</p>
+          <p class="field-hint">Type at least 3 letters of your name.</p>
           <input
             id="guestSearch"
             name="guestSearch"
@@ -450,7 +450,7 @@
                 </li>
               }
             </ul>
-          } @else if (guestSearchQuery.trim().length >= 2) {
+          } @else if (guestSearchQuery.trim().length >= 3) {
             <p class="guest-search-status">No matches. Try another spelling.</p>
           }
           }

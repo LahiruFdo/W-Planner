@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ChangeDetectorRef, Component, HostBinding, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
@@ -319,28 +319,39 @@ export class App implements OnInit, OnDestroy {
     if (!id) {
       return;
     }
-    try {
-      const list = await firstValueFrom(this.http.get<Invitee[]>('/invitees.json'));
-      const match = (list ?? []).find((i) => String(i.id ?? '').trim().toLowerCase() === id);
-      if (!match) {
-        return;
-      }
-      const invited = Math.floor(Number(match.invitedCount));
-      const type = String(match.inviteeType ?? '').trim().toLowerCase() || 'single';
-      this.invitee = {
-        id: String(match.id).trim(),
-        title: String(match.title ?? '').trim(),
-        invitationType: type,
-        guestType: type,
-        name: String(match.name ?? '').trim(),
-        searchKeywords: '',
-        invitedCount: Number.isFinite(invited) && invited >= 1 ? invited : 1
-      };
-      this.selectGuest(this.invitee);
-    } catch {
-      // No list or a bad id: fall back to the generic invitation and RSVP search.
-      this.invitee = null;
+    const match = (await this.loadInviteeList()).find((g) => g.id.toLowerCase() === id);
+    if (match) {
+      this.invitee = match;
+      this.selectGuest(match);
     }
+    // No match: fall back to the generic invitation and the RSVP name search.
+  }
+
+  private inviteeList: Promise<GuestSearchResult[]> | null = null;
+
+  /** public/invitees.json, fetched once and shared by the link lookup and the name search. */
+  private loadInviteeList(): Promise<GuestSearchResult[]> {
+    this.inviteeList ??= firstValueFrom(this.http.get<Invitee[]>('/invitees.json')).then(
+      (list) =>
+        (list ?? []).map((i) => {
+          const invited = Math.floor(Number(i.invitedCount));
+          const type = String(i.inviteeType ?? '').trim().toLowerCase() || 'single';
+          return {
+            id: String(i.id ?? '').trim(),
+            title: String(i.title ?? '').trim(),
+            invitationType: type,
+            guestType: type,
+            name: String(i.name ?? '').trim(),
+            searchKeywords: '',
+            invitedCount: Number.isFinite(invited) && invited >= 1 ? invited : 1
+          };
+        }),
+      () => {
+        this.inviteeList = null; // let a later search retry
+        return [];
+      }
+    );
+    return this.inviteeList;
   }
 
   protected openInvitation(): void {
@@ -802,7 +813,7 @@ export class App implements OnInit, OnDestroy {
       clearTimeout(this.guestSearchTimer);
     }
     const q = this.guestSearchQuery.trim();
-    if (q.length < 2) {
+    if (q.length < 3) {
       this.guestSearchResults = [];
       this.guestSearchLoading = false;
       this.cdr.markForCheck();
@@ -978,29 +989,24 @@ export class App implements OnInit, OnDestroy {
   }
 
   private async runGuestSearch(): Promise<void> {
-    if (!this.hasApi) {
-      this.guestSearchResults = [];
-      return;
-    }
-    const q = this.guestSearchQuery.trim();
-    if (q.length < 2) {
+    const q = this.guestSearchQuery.trim().toLowerCase();
+    if (q.length < 3) {
       this.guestSearchResults = [];
       return;
     }
     this.guestSearchLoading = true;
     this.cdr.markForCheck();
-    const params = new HttpParams().set('q', q).set('limit', '40');
-    try {
-      const res = await firstValueFrom(
-        this.http.get<{ guests?: GuestSearchResult[] }>(this.apiUrl('guests/search'), { params })
-      );
-      this.guestSearchResults = res.guests ?? [];
-    } catch {
-      this.guestSearchResults = [];
-    } finally {
-      this.guestSearchLoading = false;
-      this.cdr.markForCheck();
-    }
+    // Every word typed must appear in the invitation name, e.g. "amal family".
+    const terms = q.split(/\s+/).filter(Boolean);
+    const list = await this.loadInviteeList();
+    this.guestSearchResults = list
+      .filter((g) => {
+        const hay = `${this.formatGuestDisplay(g)} ${g.name}`.toLowerCase();
+        return terms.every((t) => hay.includes(t));
+      })
+      .slice(0, 40);
+    this.guestSearchLoading = false;
+    this.cdr.markForCheck();
   }
 
   private buildCalendarCells(targetDate: Date): Array<number | null> {
