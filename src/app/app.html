@@ -536,7 +536,7 @@
   </section>
 
 <nav class="stage-nav" aria-label="Invitation sections">
-  @if (activeSectionIndex > 0) {
+  @if (activeSectionIndex > 0 && !rsvpSubmitted) {
     <button type="button" class="stage-nav-btn stage-nav-btn--back" (click)="goToSection(activeSectionIndex - 1)">
       <span class="stage-nav-arrow" aria-hidden="true">‹</span>
       <span>{{ sections[activeSectionIndex - 1].label }}</span>

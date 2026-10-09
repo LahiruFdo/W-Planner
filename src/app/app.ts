@@ -875,6 +875,10 @@ export class App implements OnInit, OnDestroy {
     if (index < 0 || index >= this.sections.length || index === this.activeSectionIndex) {
       return;
     }
+    // Once the RSVP is sent the guest stays on the closing page.
+    if (this.rsvpSubmitted && index < this.activeSectionIndex) {
+      return;
+    }
     this.activeSectionIndex = index;
     // A section that had to scroll on a small screen starts at its top again.
     document.getElementById(this.sections[index].id)?.scrollTo(0, 0);
@@ -950,9 +954,8 @@ export class App implements OnInit, OnDestroy {
         this.goToSection(this.sections.length - 1);
         this.cdr.markForCheck();
       }, 1500);
-      if (this.invitee) {
-        this.rsvpSubmitted = true;
-      } else {
+      this.rsvpSubmitted = true;
+      if (!this.invitee) {
         this.clearGuestSelection();
         this.guestSearchQuery = '';
         this.guestSearchResults = [];
