@@ -77,9 +77,10 @@ export class App implements OnInit, OnDestroy {
   protected readonly sections = [
     { id: 'home', label: 'Home' },
     { id: 'details', label: 'Wedding Details' },
-    { id: 'calendar', label: 'Save the Date' },
+    { id: 'calendar', label: 'Calendar' },
     { id: 'location', label: 'The Venues' },
-    { id: 'rsvp', label: 'RSVP' }
+    { id: 'rsvp', label: 'RSVP' },
+    { id: 'thanks', label: 'Thank You' }
   ];
   protected activeSectionIndex = 0;
 
@@ -920,21 +921,35 @@ export class App implements OnInit, OnDestroy {
     this.submitting = true;
     this.statusMessage = 'Sending RSVP...';
 
+    const payload = {
+      guestId: this.selectedGuest.id,
+      guestName: this.formatGuestDisplay(this.selectedGuest),
+      invitedCount: invited,
+      attendance: this.attendance,
+      ...(this.attendance === 'yes' ? { attendingCount: finalCount } : {})
+    };
+    const googleUrl = this.config.googleApiUrl?.trim();
+
     try {
+      // The Google Apps Script web app (google-apps-script/rsvp.gs) can't answer
+      // a CORS preflight, so the JSON goes as text/plain to keep it a simple request.
       const res = await firstValueFrom(
-        this.http.post<{ ok?: boolean; error?: string }>(this.apiUrl('rsvp'), {
-          guestId: this.selectedGuest.id,
-          guestName: this.formatGuestDisplay(this.selectedGuest),
-          invitedCount: invited,
-          attendance: this.attendance,
-          ...(this.attendance === 'yes' ? { attendingCount: finalCount } : {})
-        })
+        googleUrl
+          ? this.http.post<{ ok?: boolean; error?: string }>(googleUrl, JSON.stringify(payload), {
+              headers: new HttpHeaders({ 'Content-Type': 'text/plain;charset=utf-8' })
+            })
+          : this.http.post<{ ok?: boolean; error?: string }>(this.apiUrl('rsvp'), payload)
       );
       if (res && (res as { ok?: boolean }).ok === false) {
         this.statusMessage = (res as { error?: string }).error ?? 'RSVP was not saved.';
         return;
       }
       this.statusMessage = 'Thank you! Your RSVP has been submitted.';
+      // Let the guest read the confirmation, then move on to the closing page.
+      setTimeout(() => {
+        this.goToSection(this.sections.length - 1);
+        this.cdr.markForCheck();
+      }, 1500);
       if (this.invitee) {
         this.rsvpSubmitted = true;
       } else {

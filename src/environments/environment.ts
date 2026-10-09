@@ -11,5 +11,5 @@ export const environment = {
   receptionAddress: 'Kalutara',
   receptionMapUrl: 'https://maps.app.goo.gl/Qp4u63gv7Qd4RhH98',
   apiBaseUrl: '/api',
-  googleApiUrl: ''
+  googleApiUrl: 'https://script.google.com/macros/s/AKfycbzjZLInnTfLXWxn9cY7lMjasVoHqtposQvNpHr3cYLyVw7STeRU_dDlO-aqmfneCRtw/exec'
 };

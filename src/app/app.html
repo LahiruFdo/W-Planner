@@ -282,9 +282,11 @@
 
 <div class="stage" [class.stage--inner]="activeSectionIndex > 0">
 <!-- The monogram stays at the top of every section -->
-<div class="stage-logo">
-  <ng-container [ngTemplateOutlet]="monogram" />
-</div>
+@if (activeSectionIndex < sections.length - 1) {
+  <div class="stage-logo">
+    <ng-container [ngTemplateOutlet]="monogram" />
+  </div>
+}
 
 <header class="hero section stage-section" [class.is-active]="activeSectionIndex === 0" [attr.inert]="activeSectionIndex === 0 ? null : ''" id="home">
   <div class="card">
@@ -518,7 +520,18 @@
       }
 
       <p id="formStatus" role="status" aria-live="polite">{{ statusMessage }}</p>
-      <p class="closing">With love, {{ brideName }} &amp; {{ groomName }}</p>
+    </div>
+  </section>
+
+  <section class="section stage-section ending" [class.is-active]="activeSectionIndex === 5" [attr.inert]="activeSectionIndex === 5 ? null : ''" id="thanks">
+    <div class="card">
+      <p class="section-eyebrow">Thank You</p>
+      <div class="ending-logo">
+        <ng-container [ngTemplateOutlet]="monogram" />
+      </div>
+      <p class="ending-message">Thank you for your love and blessings as we begin our journey together.</p>
+      <p class="closing">With love,</p>
+      <p class="closing ending-names">{{ brideName }} &amp; {{ groomName }}</p>
     </div>
   </section>
 
