@@ -2118,6 +2118,15 @@ footer p {
   margin: 0;
 }
 
+.rsvp-deadline {
+  margin: 0 0 clamp(0.3rem, 1vh, 0.6rem);
+  font-family: var(--font-caps);
+  font-size: clamp(0.7rem, 1.8vh, 0.9rem);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--primary);
+}
+
 /* Names section */
 .stage .eyebrow {
   font-size: clamp(0.62rem, 1.6vh, 0.8rem);

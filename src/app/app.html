@@ -418,6 +418,9 @@
     <div class="card">
       <p class="section-eyebrow">Kindly Respond</p>
       <h2>RSVP</h2>
+      @if (rsvpBy) {
+        <p class="rsvp-deadline">Reply before {{ rsvpBy }}</p>
+      }
       <p class="section-intro">Please let us know if you can join us.</p>
 
       @if (!hasApi) {

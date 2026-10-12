@@ -66,6 +66,7 @@ export class App implements OnInit, OnDestroy {
   protected readonly receptionTime = this.config.receptionTime;
   protected readonly receptionAddress = this.config.receptionAddress;
   protected readonly receptionMapUrl = this.config.receptionMapUrl;
+  protected readonly rsvpBy = this.config.rsvpBy;
 
   protected readonly monthName = this.date.toLocaleString('en-US', { month: 'long' });
   protected readonly year = this.date.getFullYear();

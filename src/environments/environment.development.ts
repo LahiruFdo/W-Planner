@@ -10,6 +10,7 @@ export const environment = {
   receptionTime: '11:00 AM to 4:00 PM',
   receptionAddress: 'Kalutara',
   receptionMapUrl: 'https://maps.app.goo.gl/Qp4u63gv7Qd4RhH98',
+  rsvpBy: '25th November',
   apiBaseUrl: '/api',
   googleApiUrl: 'https://script.google.com/macros/s/AKfycbzjZLInnTfLXWxn9cY7lMjasVoHqtposQvNpHr3cYLyVw7STeRU_dDlO-aqmfneCRtw/exec'
 };
