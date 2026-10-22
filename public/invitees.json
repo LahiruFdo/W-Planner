@@ -165,5 +165,7 @@
   { "id": "SD164", "title": "Mr.", "name": "Sahan Dilanka", "inviteeType": "couple", "invitedCount": 2 },
   { "id": "ST165", "title": "Rev. Fr.", "name": "Sajith Thilina", "inviteeType": "single", "invitedCount": 1 },
   { "id": "SW166", "title": "Rev. Fr.", "name": "Sampath Wilegoda", "inviteeType": "single", "invitedCount": 1 },
-  { "id": "PP167", "title": "Rev. Sr.", "name": "Pradeepika Perera", "inviteeType": "single", "invitedCount": 1 }
+  { "id": "PP167", "title": "Rev. Sr.", "name": "Pradeepika Perera", "inviteeType": "single", "invitedCount": 1 },
+  { "id": "YM168", "title": "Mr.", "name": "Yousuf Mohammed", "inviteeType": "single", "invitedCount": 1 },
+  { "id": "R169", "title": "Rev. Fr.", "name": "Roshan", "inviteeType": "single", "invitedCount": 1 }
 ]
