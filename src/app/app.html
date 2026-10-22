@@ -482,7 +482,7 @@
               @if (invitee) {
                 <div class="rsvp-field rsvp-field--invited">
                   <label for="inviteeCount">Invited</label>
-                  <input id="inviteeCount" name="inviteeCount" type="number" readonly [value]="selectedGuest.invitedCount" />
+                  <input id="inviteeCount" name="inviteeCount" type="number" disabled [value]="selectedGuest.invitedCount" />
                 </div>
               }
 
@@ -517,20 +517,21 @@
                 </div>
               </div>
 
-              @if (attendance === 'yes' && selectedGuest.invitedCount > 1) {
-                <div class="rsvp-field rsvp-field--count">
-                  <label for="attendingCount">How many</label>
-                  <input
-                    id="attendingCount"
-                    name="attendingCount"
-                    type="number"
-                    min="1"
-                    [max]="selectedGuest.invitedCount"
-                    [(ngModel)]="attendingCount"
-                    (ngModelChange)="onAttendingCountChange()"
-                  />
-                </div>
-              }
+              <!-- Editable only when coming and more than one is invited;
+                   otherwise it just shows 0 (No) or the single seat. -->
+              <div class="rsvp-field rsvp-field--count">
+                <label for="attendingCount">How many</label>
+                <input
+                  id="attendingCount"
+                  name="attendingCount"
+                  type="number"
+                  min="1"
+                  [max]="selectedGuest.invitedCount"
+                  [disabled]="attendance !== 'yes' || selectedGuest.invitedCount <= 1"
+                  [(ngModel)]="attendingCount"
+                  (ngModelChange)="onAttendingCountChange()"
+                />
+              </div>
             </div>
             @if (attendingCountError) {
               <p class="field-error">{{ attendingCountError }}</p>

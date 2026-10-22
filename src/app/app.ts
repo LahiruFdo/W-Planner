@@ -899,14 +899,8 @@ export class App implements OnInit, OnDestroy {
   protected setAttendance(value: 'yes' | 'no'): void {
     this.attendance = value;
     this.attendingCountError = '';
-    if (value === 'yes' && this.selectedGuest) {
-      const max = this.selectedGuest.invitedCount;
-      if (!Number.isFinite(this.attendingCount) || this.attendingCount < 1) {
-        this.attendingCount = 1;
-      } else if (this.attendingCount > max) {
-        this.attendingCount = max;
-      }
-    }
+    // No → nobody attending; back to Yes → the full invited count again.
+    this.attendingCount = value === 'yes' ? (this.selectedGuest?.invitedCount ?? 1) : 0;
     this.cdr.markForCheck();
   }
 
