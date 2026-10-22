@@ -392,6 +392,125 @@ export class App implements OnInit, OnDestroy {
       this.goToSection(this.activeSectionIndex + 1);
     } else if (event.key === 'ArrowLeft') {
       this.goToSection(this.activeSectionIndex - 1);
+    } else if (event.key === 'ArrowDown' || event.key === 'PageDown') {
+      this.scrollStep(1, event);
+    } else if (event.key === 'ArrowUp' || event.key === 'PageUp') {
+      this.scrollStep(-1, event);
+    }
+  }
+
+  // Scrolling (mouse wheel, trackpad, swipe, arrow keys) moves between
+  // sections like the Back / Next buttons. A section taller than the screen
+  // scrolls its own content first and only pages once it reaches the end.
+  private wheelDelta = 0;
+  private wheelLockUntil = 0;
+  private touchStart: { x: number; y: number; atTop: boolean; atBottom: boolean } | null = null;
+  // The active section's scroll position at the previous wheel event. Chrome
+  // scrolls before it delivers the wheel event, so the event alone can't tell
+  // whether this gesture was spent scrolling the content up to its edge.
+  private lastWheelScrollTop = 0;
+
+  private get activeSectionEl(): HTMLElement | null {
+    return document.getElementById(this.sections[this.activeSectionIndex].id);
+  }
+
+  private sectionEdges(): { atTop: boolean; atBottom: boolean } {
+    const el = this.activeSectionEl;
+    if (!el) {
+      return { atTop: true, atBottom: true };
+    }
+    return {
+      atTop: el.scrollTop <= 1,
+      atBottom: el.scrollTop + el.clientHeight >= el.scrollHeight - 2
+    };
+  }
+
+  private get canPageByScroll(): boolean {
+    return !this.isAdminRoute && this.isInvitationOpen;
+  }
+
+  /** True when the gesture belongs to something that scrolls on its own (search results). */
+  private isInnerScrollTarget(target: EventTarget | null): boolean {
+    return Boolean((target as HTMLElement | null)?.closest('.guest-search-results, select, textarea'));
+  }
+
+  private scrollStep(direction: 1 | -1, event?: Event): void {
+    const { atTop, atBottom } = this.sectionEdges();
+    if ((direction === 1 && !atBottom) || (direction === -1 && !atTop)) {
+      return; // let the section scroll its own content
+    }
+    event?.preventDefault();
+    this.goToSection(this.activeSectionIndex + direction);
+  }
+
+  @HostListener('window:wheel', ['$event'])
+  protected onWheel(event: WheelEvent): void {
+    if (!this.canPageByScroll || event.ctrlKey || this.isInnerScrollTarget(event.target)) {
+      return;
+    }
+    const now = Date.now();
+    // After a page change, ignore the rest of that gesture (trackpad momentum
+    // keeps firing wheel events) until it has been quiet for a moment.
+    if (now < this.wheelLockUntil) {
+      this.wheelLockUntil = now + 250;
+      return;
+    }
+    const direction = Math.sign(event.deltaY) as 1 | -1 | 0;
+    if (!direction) {
+      return;
+    }
+    const { atTop, atBottom } = this.sectionEdges();
+    const scrollTop = Math.round(this.activeSectionEl?.scrollTop ?? 0);
+    const contentJustMoved = scrollTop !== this.lastWheelScrollTop;
+    this.lastWheelScrollTop = scrollTop;
+    if (contentJustMoved || (direction === 1 && !atBottom) || (direction === -1 && !atTop)) {
+      // The section is scrolling its own content. Hold paging until this
+      // gesture stops, so scrolling to the end doesn't run on into the next page.
+      this.wheelDelta = 0;
+      this.wheelLockUntil = now + 250;
+      return;
+    }
+    if (Math.sign(this.wheelDelta) !== direction) {
+      this.wheelDelta = 0;
+    }
+    this.wheelDelta += event.deltaY;
+    if (Math.abs(this.wheelDelta) < 40) {
+      return;
+    }
+    this.wheelDelta = 0;
+    this.wheelLockUntil = now + 700;
+    this.goToSection(this.activeSectionIndex + direction);
+  }
+
+  @HostListener('window:touchstart', ['$event'])
+  protected onTouchStart(event: TouchEvent): void {
+    if (!this.canPageByScroll || event.touches.length !== 1 || this.isInnerScrollTarget(event.target)) {
+      this.touchStart = null;
+      return;
+    }
+    const t = event.touches[0];
+    this.touchStart = { x: t.clientX, y: t.clientY, ...this.sectionEdges() };
+  }
+
+  @HostListener('window:touchend', ['$event'])
+  protected onTouchEnd(event: TouchEvent): void {
+    const start = this.touchStart;
+    this.touchStart = null;
+    if (!start || !this.canPageByScroll) {
+      return;
+    }
+    const t = event.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = start.y - t.clientY; // positive = swipe up = next section
+    if (Math.abs(dy) < 50 || Math.abs(dy) < Math.abs(dx) * 1.5) {
+      return;
+    }
+    // Only page if the section was already at that edge when the swipe began,
+    // so a swipe that scrolls a long section to its end doesn't also page.
+    if (dy > 0 && start.atBottom) {
+      this.goToSection(this.activeSectionIndex + 1);
+    } else if (dy < 0 && start.atTop) {
+      this.goToSection(this.activeSectionIndex - 1);
     }
   }
 
@@ -894,6 +1013,7 @@ export class App implements OnInit, OnDestroy {
     this.activeSectionIndex = index;
     // A section that had to scroll on a small screen starts at its top again.
     document.getElementById(this.sections[index].id)?.scrollTo(0, 0);
+    this.lastWheelScrollTop = 0;
   }
 
   protected async submitRsvp(): Promise<void> {

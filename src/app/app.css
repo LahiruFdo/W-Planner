@@ -1803,6 +1803,12 @@ footer p {
   transition: opacity 450ms ease, transform 450ms ease, visibility 0s linear 450ms;
 }
 
+/* Sections already passed sit above, the rest below, so moving between them
+   reads as scrolling up or down. */
+.stage .stage-section.is-before {
+  transform: translateY(-12px);
+}
+
 .stage .stage-section.is-active {
   opacity: 1;
   visibility: visible;
