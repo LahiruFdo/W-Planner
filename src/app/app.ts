@@ -194,7 +194,8 @@ export class App implements OnInit, OnDestroy {
     return this.badgeEntranceCompleteMs + (totalLetters - 1) * 90;
   }
 
-  // Letters finish floating, then a glow-in animation plays before anything else loads.
+  // As the letters finish floating, a glow-in plays on the names; the rest of
+  // the page follows straight after the names rather than waiting for the glow.
   private readonly nameGlowInDurationMs = 1500;
 
   private get nameGlowInStartMs(): number {
@@ -207,7 +208,8 @@ export class App implements OnInit, OnDestroy {
   }
 
   private get subtitleStartMs(): number {
-    return this.nameGlowInCompleteMs + 600;
+    // The last letter has mostly landed ~800ms into its 1.1s float-in.
+    return this.lastLetterStartMs + 800;
   }
 
   protected get subtitleRevealDelay(): string {
