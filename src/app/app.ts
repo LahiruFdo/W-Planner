@@ -377,9 +377,13 @@ export class App implements OnInit, OnDestroy {
       clearTimeout(this.coverTimer);
       this.coverTimer = null;
     }
+    if (this.scrollTargetTimer) {
+      clearTimeout(this.scrollTargetTimer);
+      this.scrollTargetTimer = null;
+    }
   }
 
-  // Left / right arrow keys move between sections (but not while typing).
+  // Arrow / Page keys move through the invitation (but not while typing).
   @HostListener('document:keydown', ['$event'])
   protected onKeydown(event: KeyboardEvent): void {
     if (this.isAdminRoute || !this.isInvitationOpen) {
@@ -392,125 +396,56 @@ export class App implements OnInit, OnDestroy {
       this.goToSection(this.activeSectionIndex + 1);
     } else if (event.key === 'ArrowLeft') {
       this.goToSection(this.activeSectionIndex - 1);
-    } else if (event.key === 'ArrowDown' || event.key === 'PageDown') {
-      this.scrollStep(1, event);
-    } else if (event.key === 'ArrowUp' || event.key === 'PageUp') {
-      this.scrollStep(-1, event);
+    } else if (['ArrowDown', 'PageDown', 'ArrowUp', 'PageUp'].includes(event.key)) {
+      // Scroll like the wheel does; snapping settles on the next section, or
+      // further down a section that is taller than the screen.
+      const scroller = this.stageScroller;
+      if (scroller) {
+        event.preventDefault();
+        const down = event.key === 'ArrowDown' || event.key === 'PageDown';
+        scroller.scrollBy({ top: (down ? 1 : -1) * scroller.clientHeight * 0.9, behavior: 'smooth' });
+      }
     }
   }
 
-  // Scrolling (mouse wheel, trackpad, swipe, arrow keys) moves between
-  // sections like the Back / Next buttons. A section taller than the screen
-  // scrolls its own content first and only pages once it reaches the end.
-  private wheelDelta = 0;
-  private wheelLockUntil = 0;
-  private touchStart: { x: number; y: number; atTop: boolean; atBottom: boolean } | null = null;
-  // The active section's scroll position at the previous wheel event. Chrome
-  // scrolls before it delivers the wheel event, so the event alone can't tell
-  // whether this gesture was spent scrolling the content up to its edge.
-  private lastWheelScrollTop = 0;
-
-  private get activeSectionEl(): HTMLElement | null {
-    return document.getElementById(this.sections[this.activeSectionIndex].id);
+  // The sections sit in one scrolling column (.stage-scroller) that snaps to
+  // each section. The active section, and with it the Back / Next labels and
+  // the top florals, follows whichever section fills most of the view.
+  private get stageScroller(): HTMLElement | null {
+    return document.querySelector<HTMLElement>('.stage-scroller');
   }
 
-  private sectionEdges(): { atTop: boolean; atBottom: boolean } {
-    const el = this.activeSectionEl;
-    if (!el) {
-      return { atTop: true, atBottom: true };
-    }
-    return {
-      atTop: el.scrollTop <= 1,
-      atBottom: el.scrollTop + el.clientHeight >= el.scrollHeight - 2
-    };
+  // Set while a Back / Next smooth scroll is on its way, so the labels don't
+  // flick back to the section being left as the scroll passes through it.
+  private scrollTargetIndex: number | null = null;
+  private scrollTargetTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private sectionEl(index: number): HTMLElement | null {
+    return document.getElementById(this.sections[index]?.id ?? '');
   }
 
-  private get canPageByScroll(): boolean {
-    return !this.isAdminRoute && this.isInvitationOpen;
-  }
-
-  /** True when the gesture belongs to something that scrolls on its own (search results). */
-  private isInnerScrollTarget(target: EventTarget | null): boolean {
-    return Boolean((target as HTMLElement | null)?.closest('.guest-search-results, select, textarea'));
-  }
-
-  private scrollStep(direction: 1 | -1, event?: Event): void {
-    const { atTop, atBottom } = this.sectionEdges();
-    if ((direction === 1 && !atBottom) || (direction === -1 && !atTop)) {
-      return; // let the section scroll its own content
-    }
-    event?.preventDefault();
-    this.goToSection(this.activeSectionIndex + direction);
-  }
-
-  @HostListener('window:wheel', ['$event'])
-  protected onWheel(event: WheelEvent): void {
-    if (!this.canPageByScroll || event.ctrlKey || this.isInnerScrollTarget(event.target)) {
+  protected onStageScroll(): void {
+    const scroller = this.stageScroller;
+    if (!scroller) {
       return;
     }
-    const now = Date.now();
-    // After a page change, ignore the rest of that gesture (trackpad momentum
-    // keeps firing wheel events) until it has been quiet for a moment.
-    if (now < this.wheelLockUntil) {
-      this.wheelLockUntil = now + 250;
-      return;
+    const line = scroller.scrollTop + scroller.clientHeight / 2;
+    let index = 0;
+    this.sections.forEach((_, i) => {
+      const el = this.sectionEl(i);
+      if (el && el.offsetParent && el.offsetTop <= line) {
+        index = i;
+      }
+    });
+    if (this.scrollTargetIndex !== null) {
+      if (index !== this.scrollTargetIndex) {
+        return;
+      }
+      this.scrollTargetIndex = null;
     }
-    const direction = Math.sign(event.deltaY) as 1 | -1 | 0;
-    if (!direction) {
-      return;
-    }
-    const { atTop, atBottom } = this.sectionEdges();
-    const scrollTop = Math.round(this.activeSectionEl?.scrollTop ?? 0);
-    const contentJustMoved = scrollTop !== this.lastWheelScrollTop;
-    this.lastWheelScrollTop = scrollTop;
-    if (contentJustMoved || (direction === 1 && !atBottom) || (direction === -1 && !atTop)) {
-      // The section is scrolling its own content. Hold paging until this
-      // gesture stops, so scrolling to the end doesn't run on into the next page.
-      this.wheelDelta = 0;
-      this.wheelLockUntil = now + 250;
-      return;
-    }
-    if (Math.sign(this.wheelDelta) !== direction) {
-      this.wheelDelta = 0;
-    }
-    this.wheelDelta += event.deltaY;
-    if (Math.abs(this.wheelDelta) < 40) {
-      return;
-    }
-    this.wheelDelta = 0;
-    this.wheelLockUntil = now + 700;
-    this.goToSection(this.activeSectionIndex + direction);
-  }
-
-  @HostListener('window:touchstart', ['$event'])
-  protected onTouchStart(event: TouchEvent): void {
-    if (!this.canPageByScroll || event.touches.length !== 1 || this.isInnerScrollTarget(event.target)) {
-      this.touchStart = null;
-      return;
-    }
-    const t = event.touches[0];
-    this.touchStart = { x: t.clientX, y: t.clientY, ...this.sectionEdges() };
-  }
-
-  @HostListener('window:touchend', ['$event'])
-  protected onTouchEnd(event: TouchEvent): void {
-    const start = this.touchStart;
-    this.touchStart = null;
-    if (!start || !this.canPageByScroll) {
-      return;
-    }
-    const t = event.changedTouches[0];
-    const dx = t.clientX - start.x;
-    const dy = start.y - t.clientY; // positive = swipe up = next section
-    if (Math.abs(dy) < 50 || Math.abs(dy) < Math.abs(dx) * 1.5) {
-      return;
-    }
-    // Only page if the section was already at that edge when the swipe began,
-    // so a swipe that scrolls a long section to its end doesn't also page.
-    if (dy > 0 && start.atBottom) {
-      this.goToSection(this.activeSectionIndex + 1);
-    } else if (dy < 0 && start.atTop) {
-      this.goToSection(this.activeSectionIndex - 1);
+    if (index !== this.activeSectionIndex) {
+      this.activeSectionIndex = index;
+      this.cdr.markForCheck();
     }
   }
 
@@ -1011,9 +946,39 @@ export class App implements OnInit, OnDestroy {
       return;
     }
     this.activeSectionIndex = index;
-    // A section that had to scroll on a small screen starts at its top again.
-    document.getElementById(this.sections[index].id)?.scrollTo(0, 0);
-    this.lastWheelScrollTop = 0;
+    const target = this.sectionEl(index);
+    if (target) {
+      this.scrollTargetIndex = index;
+      if (this.scrollTargetTimer) {
+        clearTimeout(this.scrollTargetTimer);
+      }
+      // Give up waiting if the guest scrolls somewhere else meanwhile.
+      this.scrollTargetTimer = setTimeout(() => {
+        this.scrollTargetIndex = null;
+        this.scrollTargetTimer = null;
+        this.onStageScroll();
+      }, 1200);
+      this.stageScroller?.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+    }
+  }
+
+  /**
+   * After the RSVP is sent the guest stays on the closing page: the earlier
+   * sections are taken out of the column so there is nothing to scroll back to.
+   */
+  private lockToClosingPage(): void {
+    const last = this.sections.length - 1;
+    this.sections.forEach((_, i) => {
+      const el = this.sectionEl(i);
+      if (el && i !== last) {
+        el.style.display = 'none';
+      }
+    });
+    if (this.stageScroller) {
+      this.stageScroller.scrollTop = 0;
+    }
+    this.activeSectionIndex = last;
+    this.cdr.markForCheck();
   }
 
   protected async submitRsvp(): Promise<void> {
@@ -1085,6 +1050,8 @@ export class App implements OnInit, OnDestroy {
       setTimeout(() => {
         this.goToSection(this.sections.length - 1);
         this.cdr.markForCheck();
+        // Once the smooth scroll has landed, remove the way back.
+        setTimeout(() => this.lockToClosingPage(), 900);
       }, 1500);
       this.rsvpSubmitted = true;
       if (!this.invitee) {

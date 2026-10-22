@@ -1776,7 +1776,8 @@ footer p {
   content: none;
 }
 
-/* --- Section stage: one section at a time, fitted between the florals --- */
+/* --- Section stage: the sections scroll as one column between the fixed logo
+   and the fixed bottom florals, snapping to the start of each section --- */
 .stage {
   position: fixed;
   z-index: 1;
@@ -1786,34 +1787,33 @@ footer p {
   bottom: var(--stage-bottom);
 }
 
-.stage .stage-section {
+.stage-scroller {
   position: absolute;
   inset: 0 0 var(--stage-nav-h);
-  z-index: auto;
-  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  /* Content fades out under the logo and above the nav instead of being cut. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 14px, #000 calc(100% - 14px), transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 14px, #000 calc(100% - 14px), transparent);
+}
+
+.stage-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+/* Each section fills the view and is a snap point; one taller than the view
+   (the RSVP form on a small phone) scrolls through before the next snaps in.
+   `scroll-snap-stop` keeps a fast flick from skipping past a section. */
+.stage .stage-scroller > .stage-section {
+  position: relative;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   padding: 0.5rem var(--stage-gutter);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(12px);
-  transition: opacity 450ms ease, transform 450ms ease, visibility 0s linear 450ms;
-}
-
-/* Sections already passed sit above, the rest below, so moving between them
-   reads as scrolling up or down. */
-.stage .stage-section.is-before {
-  transform: translateY(-12px);
-}
-
-.stage .stage-section.is-active {
-  opacity: 1;
-  visibility: visible;
-  transform: none;
-  transition: opacity 450ms ease, transform 450ms ease;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
 }
 
 /* Centre each section vertically when it fits; top-align (and scroll inside
@@ -2018,7 +2018,6 @@ footer p {
 :host {
   --stage-logo-h: clamp(56px, 10vh, 92px);
   --stage-nav-h: 2.25rem;
-  --stage-inner-top: 0.75rem;
 }
 
 /* Wide / landscape screens keep the nav clear of the page edge. */
@@ -2029,32 +2028,14 @@ footer p {
 }
 
 .stage {
-  transition: top 450ms ease;
   /* Section content uses the card's capitals serif. */
   --font-body: "Cinzel", Georgia, serif;
   --font-display: "Cinzel", Georgia, serif;
   font-family: var(--font-body);
 }
 
-/* Only the landing cover and the names section show the top florals; the
-   other sections use the freed space. */
-.stage.stage--inner {
-  top: var(--stage-inner-top);
-}
-
-.floral--tl,
-.floral--tr {
-  transition: opacity 500ms ease;
-}
-
-.floral-frame--no-top .floral--tl,
-.floral-frame--no-top .floral--tr {
-  opacity: 0;
-}
-
 .stage-logo {
   position: absolute;
-  top: 0;
   left: 0;
   right: 0;
   height: var(--stage-logo-h);
@@ -2063,17 +2044,24 @@ footer p {
   justify-content: center;
   font-size: calc(var(--stage-logo-h) * 0.78);
   filter: drop-shadow(0 2px 10px rgb(176 138 76 / 18%));
-  animation: fadeUp 900ms cubic-bezier(0.22, 1, 0.32, 1) both;
+  /* `backwards` so the entrance doesn't pin the opacity afterwards. */
+  animation: fadeUp 900ms cubic-bezier(0.22, 1, 0.32, 1) backwards;
+  top: 0;
+  transition: opacity 400ms ease;
 }
 
-.stage .stage-section {
+/* The closing page has its own large monogram. */
+.stage-logo--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.stage-scroller {
   inset: var(--stage-logo-h) 0 0;
-  padding: 0.25rem var(--stage-gutter) 0.5rem;
-  scrollbar-width: none;
 }
 
-.stage .stage-section::-webkit-scrollbar {
-  display: none;
+.stage .stage-scroller > .stage-section {
+  padding: 0.25rem var(--stage-gutter) 0.5rem;
 }
 
 /* Small buttons, set just below the content, over the top of the florals. */

@@ -11,7 +11,7 @@
 <!-- Florals cut from the bottom border of the printed card, placed at the page
      edges. Rendered once, behind both the cover and the page content. -->
 @if (!isAdminRoute) {
-  <div class="floral-frame" aria-hidden="true" [class.floral-frame--no-top]="isInvitationOpen && activeSectionIndex > 0">
+  <div class="floral-frame" aria-hidden="true">
     <span class="floral floral--bl"></span>
     <span class="floral floral--br"></span>
     <span class="floral floral--tl"></span>
@@ -280,18 +280,20 @@
   <span class="dot"></span>
 </div>
 
-<div class="stage" [class.stage--inner]="activeSectionIndex > 0">
-<!-- The monogram stays at the top of every section -->
-@if (activeSectionIndex < sections.length - 1) {
-  <div class="stage-logo">
-    <ng-container [ngTemplateOutlet]="monogram" />
-  </div>
-}
+<div class="stage">
+<!-- The monogram stays fixed above the scrolling sections (the closing page
+     shows its own large one, so the small one fades out there). -->
+<div class="stage-logo" [class.stage-logo--hidden]="activeSectionIndex === sections.length - 1">
+  <ng-container [ngTemplateOutlet]="monogram" />
+</div>
 
-<header class="hero section stage-section" [class.is-active]="activeSectionIndex === 0" [class.is-before]="activeSectionIndex > 0" [attr.inert]="activeSectionIndex === 0 ? null : ''" id="home">
+<!-- All sections in one smooth-scrolling column that snaps to each section. -->
+<div class="stage-scroller" #stageScroller (scroll)="onStageScroll()">
+
+<header class="hero section stage-section" id="home">
   <div class="card">
     <p class="eyebrow">Together with their parents</p>
-    <h1 class="couple-names" [attr.aria-label]="brideName + ' and ' + groomName">
+    <h1 class="couple-names" [attr.aria-label]="brideName + '  and ' + groomName">
       <span class="name-word">
         @for (letter of brideLetters; track $index; let i = $index) {
           <span
@@ -338,7 +340,7 @@
   </div>
 </header>
 
-  <section class="section stage-section" [class.is-active]="activeSectionIndex === 1" [class.is-before]="activeSectionIndex > 1" [attr.inert]="activeSectionIndex === 1 ? null : ''" id="details">
+  <section class="section stage-section" id="details">
     <div class="card">
       <p class="section-eyebrow">The Celebration</p>
       <h2>Wedding Details</h2>
@@ -368,7 +370,7 @@
     </div>
   </section>
 
-  <section class="section stage-section" [class.is-active]="activeSectionIndex === 2" [class.is-before]="activeSectionIndex > 2" [attr.inert]="activeSectionIndex === 2 ? null : ''" id="calendar">
+  <section class="section stage-section" id="calendar">
     <div class="card">
       <p class="section-eyebrow">Save the Date</p>
       <h2>{{ monthName }} {{ year }}</h2>
@@ -389,7 +391,7 @@
     </div>
   </section>
 
-  <section class="section stage-section" [class.is-active]="activeSectionIndex === 3" [class.is-before]="activeSectionIndex > 3" [attr.inert]="activeSectionIndex === 3 ? null : ''" id="location">
+  <section class="section stage-section" id="location">
     <div class="card">
       <p class="section-eyebrow">Find Your Way</p>
       <h2>The Venues</h2>
@@ -414,7 +416,7 @@
     </div>
   </section>
 
-  <section class="section stage-section" [class.is-active]="activeSectionIndex === 4" [class.is-before]="activeSectionIndex > 4" [attr.inert]="activeSectionIndex === 4 ? null : ''" id="rsvp">
+  <section class="section stage-section" id="rsvp">
     <div class="card">
       <p class="section-eyebrow">Kindly Respond</p>
       <h2>RSVP</h2>
@@ -526,7 +528,7 @@
     </div>
   </section>
 
-  <section class="section stage-section ending" [class.is-active]="activeSectionIndex === 5" [class.is-before]="activeSectionIndex > 5" [attr.inert]="activeSectionIndex === 5 ? null : ''" id="thanks">
+  <section class="section stage-section ending" id="thanks">
     <div class="card">
       <p class="section-eyebrow">Thank You</p>
       <div class="ending-logo">
@@ -537,6 +539,8 @@
       <p class="closing ending-names">{{ brideName }} &amp; {{ groomName }}</p>
     </div>
   </section>
+
+</div>
 
 <nav class="stage-nav" aria-label="Invitation sections">
   @if (activeSectionIndex > 0 && !rsvpSubmitted) {
