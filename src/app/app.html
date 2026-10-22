@@ -463,9 +463,6 @@
           @if (selectedGuest && invitee) {
             <label for="inviteeName">Invitation for</label>
             <input id="inviteeName" name="inviteeName" type="text" readonly [value]="formatGuestDisplay(selectedGuest)" />
-
-            <label for="inviteeCount">No. of invitees</label>
-            <input id="inviteeCount" name="inviteeCount" type="number" readonly [value]="selectedGuest.invitedCount" />
           } @else if (selectedGuest) {
             <div class="guest-selected" aria-live="polite">
               <div class="guest-selected-head">
@@ -479,42 +476,64 @@
 
           @if (selectedGuest && !rsvpSubmitted) {
 
-            <label>Will you attend?</label>
-            <div class="attendance-options" role="group" aria-label="Will you attend?">
-              <button
-                type="button"
-                class="attendance-btn"
-                [class.attendance-btn--active]="attendance === 'yes'"
-                (click)="setAttendance('yes')"
-              >
-                Yes
-              </button>
-              <button
-                type="button"
-                class="attendance-btn"
-                [class.attendance-btn--active]="attendance === 'no'"
-                (click)="setAttendance('no')"
-              >
-                No
-              </button>
-            </div>
-
-            @if (attendance === 'yes' && selectedGuest.invitedCount > 1) {
-              <label for="attendingCount">How many will attend?</label>
-              <input
-                id="attendingCount"
-                name="attendingCount"
-                type="number"
-                min="1"
-                [max]="selectedGuest.invitedCount"
-                [(ngModel)]="attendingCount"
-                (ngModelChange)="onAttendingCountChange()"
-              />
-              @if (attendingCountError) {
-                <p class="field-error">{{ attendingCountError }}</p>
-              } @else {
-                <p class="field-hint">Maximum {{ selectedGuest.invitedCount }} (invited count).</p>
+            <!-- Invited count, the Yes / No toggle and the number attending share
+                 one compact row so the form fits small screens. -->
+            <div class="rsvp-row">
+              @if (invitee) {
+                <div class="rsvp-field rsvp-field--invited">
+                  <label for="inviteeCount">Invited</label>
+                  <input id="inviteeCount" name="inviteeCount" type="number" readonly [value]="selectedGuest.invitedCount" />
+                </div>
               }
+
+              <div class="rsvp-field rsvp-field--attend">
+                <label id="attendLabel">Attending?</label>
+                <div
+                  class="attend-toggle"
+                  [class.attend-toggle--no]="attendance === 'no'"
+                  role="radiogroup"
+                  aria-labelledby="attendLabel"
+                >
+                  <button
+                    type="button"
+                    role="radio"
+                    class="attend-toggle-option"
+                    [class.attend-toggle-option--active]="attendance === 'yes'"
+                    [attr.aria-checked]="attendance === 'yes'"
+                    (click)="setAttendance('yes')"
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    class="attend-toggle-option"
+                    [class.attend-toggle-option--active]="attendance === 'no'"
+                    [attr.aria-checked]="attendance === 'no'"
+                    (click)="setAttendance('no')"
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
+
+              @if (attendance === 'yes' && selectedGuest.invitedCount > 1) {
+                <div class="rsvp-field rsvp-field--count">
+                  <label for="attendingCount">How many</label>
+                  <input
+                    id="attendingCount"
+                    name="attendingCount"
+                    type="number"
+                    min="1"
+                    [max]="selectedGuest.invitedCount"
+                    [(ngModel)]="attendingCount"
+                    (ngModelChange)="onAttendingCountChange()"
+                  />
+                </div>
+              }
+            </div>
+            @if (attendingCountError) {
+              <p class="field-error">{{ attendingCountError }}</p>
             }
 
             <button class="btn" type="submit" [disabled]="submitting || !canSubmitRsvp">

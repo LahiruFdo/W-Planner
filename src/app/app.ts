@@ -882,7 +882,7 @@ export class App implements OnInit, OnDestroy {
   protected selectGuest(g: GuestSearchResult): void {
     this.selectedGuest = g;
     this.attendingCount = g.invitedCount > 0 ? g.invitedCount : 1;
-    this.attendance = '';
+    this.attendance = 'yes'; // most guests are coming; No is one tap away
     this.attendingCountError = '';
     this.statusMessage = '';
     this.cdr.markForCheck();
