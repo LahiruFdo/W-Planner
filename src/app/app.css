@@ -310,7 +310,7 @@
 /* --- Couple names (handwritten script — Great Vibes) --- */
 .couple-names {
   margin: 1.25rem 0 0.5rem;
-  font-size: clamp(3.2rem, 11vw, 6rem);
+  font-size: clamp(3.2rem, 11vw, 5.4rem);
   line-height: 1.05;
   font-family: var(--font-script);
   font-weight: 400;
@@ -344,7 +344,9 @@
   color: var(--primary-container);
   font-family: var(--font-script);
   font-weight: 400;
-  padding: 0 0.12em;
+  /* The script letters overhang their boxes, so the "&" needs real room to
+     stand clear of the bride's name (a little more on that side). */
+  padding: 0 0.22em 0 0.32em;
   font-size: 0.92em;
 }
 
@@ -1754,7 +1756,7 @@ footer p {
   .couple-names .ampersand {
     display: inline-block;
     width: auto;
-    padding: 0 0.1em;
+    padding: 0 0.22em 0 0.32em;
     font-size: 0.92em;
   }
 }
