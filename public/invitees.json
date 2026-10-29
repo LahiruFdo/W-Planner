@@ -170,5 +170,6 @@
   { "id": "RS169", "title": "Rev. Fr.", "name": "Roshan Silva", "inviteeType": "single", "invitedCount": 1 },
   { "id": "CP170", "title": "Mr.", "name": "Christy Perera", "inviteeType": "single", "invitedCount": 1 },
   { "id": "DF171", "title": "Mr.", "name": "Dileepa Fernando", "inviteeType": "family", "invitedCount": 4 },
-  { "id": "HC172", "title": "Mrs.", "name": "Heshani Cooray", "inviteeType": "single", "invitedCount": 1 }
+  { "id": "HC172", "title": "Mrs.", "name": "Heshani Cooray", "inviteeType": "single", "invitedCount": 1 },
+  { "id": "HA173", "title": "Mrs.", "name": "Hasini Ariyapperuma", "inviteeType": "single", "invitedCount": 1 }
 ]
