@@ -172,5 +172,6 @@
   { "id": "DF171", "title": "Mr.", "name": "Dileepa Fernando", "inviteeType": "family", "invitedCount": 4 },
   { "id": "HC172", "title": "Mrs.", "name": "Heshani Cooray", "inviteeType": "single", "invitedCount": 1 },
   { "id": "HA173", "title": "Mrs.", "name": "Hasini Ariyapperuma", "inviteeType": "single", "invitedCount": 1 },
-  { "id": "MK174", "title": "Ms.", "name": "Madushani Kalpani", "inviteeType": "single", "invitedCount": 1 }
+  { "id": "MK174", "title": "Ms.", "name": "Madushani Kalpani", "inviteeType": "single", "invitedCount": 1 },
+  { "id": "SK175", "title": "Mrs.", "name": "Sandhya Kumarage", "inviteeType": "single", "invitedCount": 1 }
 ]
