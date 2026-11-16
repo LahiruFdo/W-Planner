@@ -1,0 +1,359 @@
+:host {
+  --paper: #fbf7ee;
+  --paper-deep: #f3ebda;
+  --red: #9b1c2c;
+  --red-deep: #6e0b18;
+  --gold: #a9823f;
+  --gold-light: #d8bd85;
+  --gold-foil: linear-gradient(170deg, #dcc08a 0%, #b38c4e 45%, #c9a565 70%, #a27c40 100%);
+  --ink: #3b2a2a;
+  --font-script: "Great Vibes", "Brush Script MT", cursive;
+  --font-caps: "Cinzel", "Cormorant Garamond", Georgia, serif;
+  --font-body: "Cormorant Garamond", Georgia, serif;
+
+  display: block;
+  min-height: 100dvh;
+  position: relative;
+  background: radial-gradient(ellipse at 50% 35%, #fdfaf3 0%, var(--paper) 55%, var(--paper-deep) 100%) fixed;
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+
+.material-symbols-outlined {
+  font-size: 1.2em;
+  line-height: 1;
+}
+
+/* Rose bouquets in the page corners */
+.roses {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.roses-corner {
+  position: absolute;
+  width: clamp(170px, 34vw, 360px);
+  height: auto;
+  opacity: 0.95;
+}
+
+.roses-corner--tl {
+  top: -12px;
+  left: -12px;
+}
+
+.roses-corner--br {
+  right: -12px;
+  bottom: -12px;
+  transform: rotate(180deg);
+}
+
+.page {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: clamp(7rem, 22vw, 9rem) 16px 6rem;
+}
+
+/* Header */
+.head {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.hosts {
+  margin: 0;
+  font-family: var(--font-caps);
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  color: var(--gold);
+}
+
+.title {
+  margin: 0.4rem 0 0;
+  font-family: var(--font-caps);
+  font-weight: 600;
+  font-size: clamp(1.6rem, 6vw, 2.5rem);
+  letter-spacing: 0.08em;
+  line-height: 1.25;
+  color: var(--red);
+}
+
+.title-sub {
+  display: block;
+  font-size: 0.62em;
+  letter-spacing: 0.1em;
+}
+
+.amp {
+  display: block;
+  font-family: var(--font-script);
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--gold);
+  font-size: 1.15em;
+  line-height: 1;
+}
+
+.rule {
+  position: relative;
+  width: min(260px, 70%);
+  height: 1px;
+  margin: 1.1rem auto;
+  background: var(--gold-foil);
+}
+
+.rule span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  background: var(--red);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.details {
+  margin: 0.2rem 0;
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.details--venue {
+  font-style: italic;
+  color: #5b4646;
+}
+
+.dot {
+  color: var(--gold);
+  padding: 0 0.3em;
+}
+
+/* Guest list panel */
+.panel {
+  background: rgb(255 253 248 / 82%);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgb(169 130 63 / 45%);
+  border-radius: 14px;
+  box-shadow: 0 18px 50px rgb(110 11 24 / 8%);
+  padding: 1rem;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgb(169 130 63 / 40%);
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
+  background: #fff;
+  color: var(--gold);
+  margin-bottom: 0.75rem;
+}
+
+.search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 1.1rem;
+  color: var(--ink);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.25rem;
+  border-bottom: 1px solid rgb(169 130 63 / 22%);
+}
+
+.item:last-child {
+  border-bottom: 0;
+}
+
+.name {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.name span:last-child {
+  overflow-wrap: anywhere;
+}
+
+.item--sent .name {
+  color: #6f5b5b;
+}
+
+.tick {
+  color: var(--gold);
+  flex-shrink: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  border: 1px solid rgb(169 130 63 / 50%);
+  background: #fff;
+  color: var(--gold);
+  cursor: pointer;
+}
+
+.send-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.6rem 1.05rem;
+  background: linear-gradient(160deg, #b32234 0%, var(--red) 55%, var(--red-deep) 100%);
+  color: #fff8ec;
+  font-family: var(--font-caps);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgb(155 28 44 / 25%), inset 0 0 0 1px rgb(216 189 133 / 55%);
+  cursor: pointer;
+}
+
+.send-btn:disabled {
+  opacity: 0.65;
+  cursor: progress;
+}
+
+.send-btn--ready {
+  background: var(--gold-foil);
+  color: var(--red-deep);
+}
+
+.empty {
+  text-align: center;
+  font-style: italic;
+  color: #6f5b5b;
+  padding: 1.5rem 0;
+  margin: 0;
+}
+
+/* Preview */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(40 16 20 / 62%);
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  max-height: 100%;
+}
+
+.modal-card {
+  display: block;
+  max-width: min(92vw, 520px);
+  max-height: calc(100dvh - 120px);
+  width: auto;
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 20px 60px rgb(0 0 0 / 35%);
+}
+
+.modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.ghost-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--gold-light);
+  border-radius: 999px;
+  padding: 0.6rem 1rem;
+  background: rgb(255 253 248 / 92%);
+  color: var(--red-deep);
+  font-family: var(--font-caps);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.25rem;
+  z-index: 20;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  padding: 0.75rem 1.1rem;
+  border-radius: 10px;
+  background: var(--red-deep);
+  color: #fff8ec;
+  font-size: 1.05rem;
+  text-align: center;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 25%);
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .page {
+    padding-top: 10.5rem;
+  }
+  .item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .actions {
+    justify-content: flex-end;
+  }
+}

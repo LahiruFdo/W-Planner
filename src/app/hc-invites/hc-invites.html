@@ -1,0 +1,95 @@
+@if (cornerImage()) {
+  <div class="roses" aria-hidden="true">
+    <img class="roses-corner roses-corner--tl" [src]="cornerImage()" alt="" />
+    <img class="roses-corner roses-corner--br" [src]="cornerImage()" alt="" />
+  </div>
+}
+
+<main class="page">
+  <header class="head">
+    <p class="hosts">{{ event.hosts }}</p>
+    <h1 class="title">
+      Home Coming <span class="amp">&amp;</span> <span class="title-sub">Housewarming</span>
+    </h1>
+    <div class="rule" aria-hidden="true"><span></span></div>
+    <p class="details">
+      {{ event.weekday }}, {{ event.day }} {{ event.month }} {{ event.year }}
+      <span class="dot" aria-hidden="true">·</span> <span class="nowrap">{{ event.time }} onwards</span>
+    </p>
+    <p class="details details--venue">{{ event.venueLines.join(' ') }}</p>
+  </header>
+
+  <section class="panel" aria-label="Invitations">
+    <label class="search">
+      <span class="material-symbols-outlined" aria-hidden="true">search</span>
+      <input
+        type="search"
+        placeholder="Search guests"
+        [value]="query()"
+        (input)="query.set($any($event.target).value)"
+        aria-label="Search guests"
+      />
+    </label>
+
+    @if (loading()) {
+      <p class="empty">Loading guest list…</p>
+    } @else if (loadError()) {
+      <p class="empty">Could not load the guest list.</p>
+    } @else {
+      <ul class="list">
+        @for (row of filtered(); track row.id) {
+          <li class="item" [class.item--sent]="stateOf(row.id) === 'sent'">
+            <button class="name" type="button" (click)="openPreview(row)" title="Preview invitation">
+              @if (stateOf(row.id) === 'sent') {
+                <span class="material-symbols-outlined tick" aria-label="Sent">check_circle</span>
+              }
+              <span>{{ row.displayName }}</span>
+            </button>
+            <div class="actions">
+              <button class="icon-btn" type="button" (click)="openPreview(row)" aria-label="Preview invitation for {{ row.displayName }}">
+                <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+              </button>
+              <button class="icon-btn" type="button" (click)="download(row)" aria-label="Download invitation for {{ row.displayName }}" title="Download JPG">
+                <span class="material-symbols-outlined" aria-hidden="true">download</span>
+              </button>
+              <button
+                class="send-btn"
+                type="button"
+                (click)="send(row)"
+                [disabled]="stateOf(row.id) === 'preparing'"
+                [class.send-btn--ready]="stateOf(row.id) === 'ready'"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">send</span>
+                {{ buttonLabel(row.id) }}
+              </button>
+            </div>
+          </li>
+        } @empty {
+          <li class="empty">No guests found.</li>
+        }
+      </ul>
+    }
+  </section>
+</main>
+
+@if (preview(); as p) {
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Invitation preview" (click)="closePreview()">
+    <div class="modal-body" (click)="$event.stopPropagation()">
+      <img class="modal-card" [src]="p.src" [alt]="'Invitation for ' + p.row.displayName" />
+      <div class="modal-actions">
+        <button class="ghost-btn" type="button" (click)="closePreview()">Close</button>
+        <button class="ghost-btn" type="button" (click)="download(p.row)">
+          <span class="material-symbols-outlined" aria-hidden="true">download</span> Download
+        </button>
+        <button class="send-btn" type="button" (click)="send(p.row)" [disabled]="stateOf(p.row.id) === 'preparing'">
+          <span class="material-symbols-outlined" aria-hidden="true">send</span>
+          {{ buttonLabel(p.row.id) }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (toast()) {
+  <div class="toast" role="status">{{ toast() }}</div>
+}
