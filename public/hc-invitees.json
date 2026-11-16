@@ -25,8 +25,8 @@
   { "id": "KP050", "title": "Mr.", "name": "Kevin Perera", "inviteeType": "single", "invitedCount": 1 },
   { "id": "CJ061", "title": "Mrs.", "name": "Chandima Jayasooriya", "inviteeType": "single", "invitedCount": 1 },
   { "id": "JG150", "title": "Mr.", "name": "Janaka Gunawardana", "inviteeType": "couple", "invitedCount": 2 },
-  { "id": "JG150", "title": "Mr.", "name": "Tharanga Dilruk", "inviteeType": "single", "invitedCount": 1 },
-  { "id": "JG150", "title": "Mr.", "name": "Hemantha", "inviteeType": "single", "invitedCount": 1 },
-  { "id": "JG150", "title": "Mr.", "name": "Gayan", "inviteeType": "single", "invitedCount": 1 },
-  { "id": "JG150", "title": "Mr.", "name": "Ishrath Ihsan", "inviteeType": "single", "invitedCount": 1 }
+  { "id": "TD151", "title": "Mr.", "name": "Tharanga Dilruk", "inviteeType": "single", "invitedCount": 1 },
+  { "id": "MH152", "title": "Mr.", "name": "Hemantha", "inviteeType": "single", "invitedCount": 1 },
+  { "id": "JG154", "title": "Mr.", "name": "Gayan", "inviteeType": "single", "invitedCount": 1 },
+  { "id": "II160", "title": "Mr.", "name": "Ishrath Ihsan", "inviteeType": "single", "invitedCount": 1 }
 ]
